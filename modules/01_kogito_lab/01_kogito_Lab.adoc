@@ -60,4 +60,5 @@ Login successful.
 * Accept to use insecure connections.
 * When prompted, enter the pasword provided by the instructor.
 . To access the OpenShift cluster console from your laptop, open a browser window and navigate to the url https://master00-<GUID>.generic.opentlc.com - replace <GUID> with the lab GUID from the GuidGrabber tool.
+* Your OpenShift cluster uses self-signed certificates, so expect a security warning in the browser. Create a security exception and proceed.
 * Login with user `user1` and the password provided by the lab instructor.
