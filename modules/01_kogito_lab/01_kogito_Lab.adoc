@@ -121,8 +121,60 @@ When you run `mvn compile quarkus:dev` {project-name}, the Kogito/Quarkus applic
 it receives a HTTP request it will hold the request, and check to see if any application source
 files (Java code, process definitions, rule definitions, etc.) have been changed. If they have it will transparently compile the changed files, redeploy
 the application with the changed files, and then the HTTP request will continue to the redeployed
-application. {project-name} redeploys are much faster than a traditional app server, so for all but the largest
-applications this should take well under a second.
+application. Project redeploys are much faster than a traditional app server, so for all but the largest
+applications this should take well under a second. This greatly speeds up a developer's development cycle.
+
+Kogito provides support for not only hot-reloading source code, but also business assets, like BPMN2 process definitions, DMN decision definitions, DRL rule files, Excel-based decision tables. This makes Kogito and its supported resources a first-class-citizen in the Quarkus eco-system.
+
+In this part of the lab, we will experience the _hot-reload_ semantics of Kogito by altering the rules of our _Kogito Travel Agency_ application.
+
+1. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `01-kogito-travel-agency` folder.
++
+----
+$ cd 01-kogito-travel-agency
+----
++
+. Run the Maven command to start the Kogito application in _dev-mode_.
++
+----
+mvn clean package quarkus:dev
+----
++
+. If everything executed correctly, you will now see the applicatio running in _dev-mode_.
++
+----
+[INFO] --- quarkus-maven-plugin:0.20.0:dev (default-cli) @ kogito-travel-agency ---
+Listening for transport dt_socket at address: 5005
+2019-08-23 11:19:53,578 INFO  [io.qua.dep.QuarkusAugmentor] (main) Beginning quarkus augmentation
+2019-08-23 11:20:00,485 INFO  [io.qua.dep.QuarkusAugmentor] (main) Quarkus augmentation completed in 6907ms
+2019-08-23 11:20:00,878 INFO  [io.qua.swa.run.SwaggerUiServletExtension] (main) Swagger UI available at /swagger-ui
+2019-08-23 11:20:01,515 INFO  [io.quarkus] (main) Quarkus 0.20.0 started in 8.297s. Listening on: http://[::]:8080
+2019-08-23 11:20:01,542 INFO  [io.quarkus] (main) Installed features: [cdi, kogito, resteasy, resteasy-jsonb, smallrye-openapi, swagger-ui]
+----
++
+
+We can see that the applications has a number of features installed, including _kogito_ to provide intelligent business application support, _resteasy_ to provide RESTful support, and _swagger-ui_ to provide swagger support.
+
+Let's first access the application via the provided user interface.
+
+. On your laptop, open a browser (Chrome, Firefox) and navigate to your workstation at: http://workstation-$GUID.rhpds.opentlc.com (replace $GUID with the GUID provided to you)
+. You will see the following application UI.
+image:images/kogito-travel-agency-ui-home.png[]
+. Open a new SSH session to your workstation. This allows us to change one of our source files, while we keep our application running in _dev-mode_ in our other terminal.
++
+----
+$ export GUID=<your GUID obtained from the GuidGrabber>
+$ ssh lab-user@workstation-$GUID.rhpds.opentlc.com
+----
+* When prompted, enter the password provided by the instructor.
+. Navigate to the project folder:
++
+----
+$ cd kogito-travel-agency-tutorial/01-kogito-travel-agency
+----
++
+.
+
 
 
 
