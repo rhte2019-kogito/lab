@@ -73,9 +73,9 @@ image:images/travels-process.png[]
 
 The _Hotel Booking_ and _Flight Booking_ functionalities are implemented as _private_ subprocesses
 
-image:images/book-hotel-service.png[]
+image:images/book-hotel-process.png[]
 
-image:image/book-flight-service.png[]
+image:images/book-flight-process.png[]
 
 These processes call _Hotel Booking Service_ and _Flight Booking Service_, which are both implemented as CDI beans that have hard coded logic to return a booked flight or hotel.
 
@@ -112,7 +112,17 @@ $ cd kogito-travel-agency-tutorial
 
 == Lab 1: Kogito Development
 
+https://kogito.kie.org/[_Kogito_] is the _Cloud-Native Business Automation platform for building Intelligent Applications_.
+It's build on top of https://www.quarkus.io[Quarkus], a _Kubernetes Native Java stack tailored for GraalVM & OpenJDK HotSpot, crafted from the best of breed Java libraries and standards_.
 
+One of the focusses of Quarkus, and thus of Kogito, is _Developer Experience_. Functionalities like _dev mode_ and _hot reload_ allows developers to make changes in their source code and configuration files, and immediately have these changes available in their test environment, without the need to explicitly compile and redeploy the application. This _hot reload_ functionality is only activated when the application is refreshed (for example when hitting the application with a RESTful request).
+
+When you run `mvn compile quarkus:dev` {project-name}, the Kogito/Quarkus application will launch in development mode. When
+it receives a HTTP request it will hold the request, and check to see if any application source
+files (Java code, process definitions, rule definitions, etc.) have been changed. If they have it will transparently compile the changed files, redeploy
+the application with the changed files, and then the HTTP request will continue to the redeployed
+application. {project-name} redeploys are much faster than a traditional app server, so for all but the largest
+applications this should take well under a second.
 
 
 
