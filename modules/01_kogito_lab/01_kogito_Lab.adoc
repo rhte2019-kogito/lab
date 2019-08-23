@@ -64,13 +64,54 @@ Login successful.
 * Login with user `user1` and the password provided by the lab instructor.
 
 
+== Use Case
+
+During this workshop we will create and deploy a software system for a startup travel agency called Kogito Travel Agency.
+The system will consist of a Kogito _Booking System Service_ implemented with a BPMN2 process definition and rules.
+
+image:images/travels-process.png[]
+
+The _Hotel Booking_ and _Flight Booking_ functionalities are implemented as _private_ subprocesses
+
+image:images/book-hotel-service.png[]
+
+image:image/book-flight-service.png[]
+
+These processes call _Hotel Booking Service_ and _Flight Booking Service_, which are both implemented as CDI beans that have hard coded logic to return a booked flight or hotel.
+
+org.acme.travels.service.HotelBookingService
+org.acme.travels.service.FlightBookingService
+
+Obviously this has been done for simplicity reasons. In a real application these functionalities would be implemented as microservices. However, the current implementation does show the power of Kogito processes definition integration with CDI.
+
 == Cloning the repository
+You are provided with a GitHub repository that contains 3 Kogito projects:
+
+* 01-kogito-travel-agency: The base project which contains the _Booking System Service_. This project deploys as a single Quarkus application (JAR or Native Image) and does not support persistence.
+* 02-kogito-travel-agency: The base project with persistence support. This project requires Infinispan / JBoss Data Grid.
+* 03-kogito-travel-agency: Extension of project 3 with Kafka integration support to implement an Event Driven _Booking System Service_.
+
+The GitHub repository can be found here: https://github.com/rhte2019-kogito/kogito-travel-agency-tutorial/
 
 
-
+. Login to your workstation as explained in the previous paragraph.
+. When logged in, clone the Kogito Lab repository:
++
+----
+$ git clone https://github.com/rhte2019-kogito/kogito-travel-agency-tutorial.git
+----
++
+. Navigate tot the _Kogito Travel Agency Tutorial_ folder.
++
+----
+$ cd kogito-travel-agency-tutorial
+----
++
+. This folder contains the 3 projects that we will use during this lab.
 
 
 == Lab 1: Kogito Development
+
 
 
 
