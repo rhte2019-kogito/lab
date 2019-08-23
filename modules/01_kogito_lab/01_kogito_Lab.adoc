@@ -134,7 +134,7 @@ Kogito provides support for not only hot-reloading source code, but also busines
 
 In this part of the lab, we will experience the _hot-reload_ semantics of Kogito by altering the rules of our _Kogito Travel Agency_ application.
 
-1. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `01-kogito-travel-agency` folder.
+. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `01-kogito-travel-agency` folder.
 +
 ----
 $ cd 01-kogito-travel-agency
