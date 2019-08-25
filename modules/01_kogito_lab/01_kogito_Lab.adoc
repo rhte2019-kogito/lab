@@ -533,8 +533,203 @@ Notice that the application starts up in about 15 seconds. The pod takes more or
 
 === Deployment to OpenShift - Native image
 
-TODO
+. Build a Linux 64-bit native executable of the Kogito Travel Agency application:
++
+----
+$ mvn clean package -DskipTests=true -Pnative
+----
++
+* This produces a native executable `kogito-travel-agency-1.0-SNAPSHOT-runner` in the `target` folder of the project. Note that this executable only runs on 64-bit Linux.
+Native compilation may take 5-10 minutes to complete.
+* Sample output:
++
+----
+[INFO] Scanning for projects...
+[INFO]
+[INFO] ---------------< org.acme.travels:kogito-travel-agency >----------------
+[INFO] Building kogito-travel-agency 1.0-SNAPSHOT
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO]
+[INFO] --- maven-clean-plugin:2.5:clean (default-clean) @ kogito-travel-agency ---
+[INFO] Deleting /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target
+[INFO]
+[INFO] --- maven-resources-plugin:2.6:resources (default-resources) @ kogito-travel-agency ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] Copying 6 resources
+[INFO]
+[INFO] --- maven-compiler-plugin:3.1:compile (default-compile) @ kogito-travel-agency ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 10 source files to /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target/classes
+[INFO]
+[INFO] --- maven-resources-plugin:2.6:testResources (default-testResources) @ kogito-travel-agency ---
+[INFO] Using 'UTF-8' encoding to copy filtered resources.
+[INFO] skip non existing resourceDirectory /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/src/test/resources
+[INFO]
+[INFO] --- maven-compiler-plugin:3.1:testCompile (default-testCompile) @ kogito-travel-agency ---
+[INFO] Changes detected - recompiling the module!
+[INFO] Compiling 4 source files to /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target/test-classes
+[INFO]
+[INFO] --- maven-surefire-plugin:2.22.0:test (default-test) @ kogito-travel-agency ---
+[INFO] Tests are skipped.
+[INFO]
+[INFO] --- maven-jar-plugin:2.4:jar (default-jar) @ kogito-travel-agency ---
+[INFO] Building jar: /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target/kogito-travel-agency-1.0-SNAPSHOT.jar
+[INFO]
+[INFO] --- quarkus-maven-plugin:999-SNAPSHOT:build (default) @ kogito-travel-agency ---
+[INFO] [io.quarkus.deployment.QuarkusAugmentor] Beginning quarkus augmentation
+[INFO] [org.jboss.threads] JBoss Threads version 3.0.0.Beta5
+[INFO] [io.quarkus.deployment.QuarkusAugmentor] Quarkus augmentation completed in 4915ms
+[INFO] [io.quarkus.creator.phase.runnerjar.RunnerJarPhase] Building jar: /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target/kogito-travel-agency-1.0-SNAPSHOT-runner.jar
+[INFO]
+[INFO] --- quarkus-maven-plugin:999-SNAPSHOT:native-image (default) @ kogito-travel-agency ---
+[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] Running Quarkus native-image plugin on OpenJDK 64-Bit Server VM
+[INFO] [io.quarkus.creator.phase.nativeimage.NativeImagePhase] /home/bernard/apps/graalvm/current/bin/native-image -J-Djava.util.logging.manager=org.jboss.logmanager.LogManager -J-Dio.netty.leakDetection.level=DISABLED -J-Dvertx.disableDnsResolver=true -J-Dio.netty.noUnsafe=true --
+initialize-at-build-time= -H:InitialCollectionPolicy=com.oracle.svm.core.genscavenge.CollectionPolicy$BySpaceAndTime -jar kogito-travel-agency-1.0-SNAPSHOT-runner.jar -J-Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -H:FallbackThreshold=0 -H:+ReportExceptionStackTraces -H
+:+PrintAnalysisCallTree -H:-AddAllCharsets -H:EnableURLProtocols=http,https --enable-all-security-services -H:NativeLinkerOption=-no-pie -H:-SpawnIsolates -H:+JNI --no-server -H:-UseServiceLoaderFeature -H:+StackTrace
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]    classlist:  20,599.62 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]        (cap):   1,282.78 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]        setup:   2,839.74 ms
+12:07:05,137 INFO  [org.jbo.threads] JBoss Threads version 3.0.0.Beta5
+[...]
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]   (typeflow):  33,347.24 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]    (objects):  17,013.88 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]   (features):     958.93 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]     analysis:  55,337.70 ms
+Printing call tree to /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target/reports/call_tree_kogito-travel-agency-1.0-SNAPSHOT-runner_20190825_120813.txt
+Printing list of used classes to /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target/reports/used_classes_kogito-travel-agency-1.0-SNAPSHOT-runner_20190825_120819.txt
+Printing list of used packages to /home/bernard/projects_internal/rhte2019-kogito/kogito-travel-agency-2/target/reports/used_packages_kogito-travel-agency-1.0-SNAPSHOT-runner_20190825_120819.txt
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]     (clinit):   1,180.92 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]     universe:   3,353.74 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]      (parse):   4,563.41 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]     (inline):   6,275.42 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]    (compile):  54,221.94 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]      compile:  68,186.55 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]        image:   6,117.41 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704]        write:   1,038.32 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:18704][total]: 179,075.43 ms
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time: 03:09 min
+[INFO] Finished at: 2019-08-25T12:09:39+02:00
+[INFO] ------------------------------------------------------------------------
+----
+. Optional: run and test the application locally. Make sure to start the Infinispan docker image first.
++
+----
+$ ./target/kogito-travel-agency-1.0-SNAPSHOT-runner
+----
++
+.Output
+----
+2019-08-25 12:33:21,676 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [172.17.42.3:11222]
+2019-08-25 12:33:21,676 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(172.17.42.3:11222), adding to the pool.
+2019-08-25 12:33:21,676 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(localhost:11222), removing from the pool.
+2019-08-25 12:33:21,677 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: null
+2019-08-25 12:33:21,711 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-3) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [172.17.42.3:11222]
+2019-08-25 12:33:21,886 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.307s. Listening on: http://0.0.0.0:8080
+2019-08-25 12:33:21,887 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, swagger-ui, vertx, vertx-web]
+----
 
+. Build a Docker image with the native executable. The `src/main/docker` folder contains a Docker file based on a minimal RHEL8 UBI image. Build the Docker image using Podman:
++
+----
+$ sudo podman build -f src/main/docker/Dockerfile.native -t kogito-travel-agency:0.0.1 .
+----
++
+.Sample output
+----
+STEP 1: FROM registry.access.redhat.com/ubi8/ubi-minimal
+Getting image source signatures
+Copying blob e9152ec084c2 done
+Copying blob 9b3f8c4ce518 done
+Copying config 9c9faa7498 done
+Writing manifest to image destination
+Storing signatures
+STEP 2: WORKDIR /work/
+59898364eb11211127a646b625d9ec0edbb6afbbc20bc72ab543bb2f3d2ae92c
+STEP 3: COPY target/*-runner /work/application
+f081443003d57c8114d5f47fd1f82f118c4322bc640ea28bd1932cea731224b0
+STEP 4: RUN chmod 775 /work
+4c0ab746913f8021870046abe02c0e9951b60e625145968d8695ec1bb834dfa6
+STEP 5: EXPOSE 8080
+458dae96b2e69fd556342d37a50259552a2727ea2a9203928afc330f254ebd14
+STEP 6: CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+STEP 7: COMMIT kogito-travel-agency:0.0.1
+57c04fae486399869aeadba8fe7ac5dc1cd402c5d56cca290f025b86833a02b1
+----
+
+. Push the native image to the internal Docker registry of the OpenShift cluster.
+.. Log in into the cluster as user `admin`. Use the same password as `user1`.
++
+----
+$ oc login -u admin
+----
+.. Create a public route to the docker registry in the `default` namespace.
++
+----
+$ oc create route passthrough docker-registry-lab --service=docker-registry -n default
+----
+.. Set the route to the docker registry as an environment variable.
++
+----
+$ export DOCKER_REGISTRY_HOSTNAME=$(oc get route docker-registry-lab -n default -o template --template='{{.spec.host}}')
+----
+.. Login to the internal registry of your OpenShift cluster.
++
+----
+$ export TKN=`oc whoami -t`
+$ sudo podman login -u admin -p $TKN --tls-verify=false $DOCKER_REGISTRY_HOSTNAME
+----
+.. Tag the image
++
+----
+$ sudo podman tag kogito-travel-agency:0.0.1  $DOCKER_REGISTRY_HOSTNAME/openshift/kogito-travel-agency:0.0.1
+----
+.. Log back in as `user1`.
++
+----
+$ oc login -u user1
+----
+
+. Scale down the non-native version of the Kogito Travel Agency application:
++
+----
+$ oc scale dc kogito-travel-agency --replicas=0 -n kogito
+----
+
+. The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for a deployment of the native version of the Kogito Travel Agency app. It describes a DeploymentConfig, Service and Route for the application. +
+Review the `kogito-travel-agency-native.yml` template file.
++
+* The DeploymentConfig points to the imagestream of the image we pushed to the OpenShift registry.
+* The `kogito-travel-agency` configmap is mounted in the `/work/config` directory of the pod.
+
+. Deploy the template to the OpenShift cluster:
++
+----
+$ oc process -f openshift/kogito-travel-agency-native.yml | oc create -f - -n kogito
+----
++
+.Output
+----
+service/kogito-travel-agency-native created
+route.route.openshift.io/kogito-travel-agency-native created
+deploymentconfig.apps.openshift.io/kogito-travel-agency-native created
+----
+
+----
+019-08-25 17:37:56,974 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.195:11222]
+2019-08-25 17:37:56,975 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(10.128.0.195:11222), adding to the pool.
+2019-08-25 17:37:56,975 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(infinispan-server.kogito-travel-agency.svc:11222), removing from the pool.
+2019-08-25 17:37:56,977 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: null
+2019-08-25 17:37:57,087 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-2) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.195:11222]
+2019-08-25 17:37:57,296 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.486s. Listening on: http://0.0.0.0:8080 
+2019-08-25 17:37:57,297 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, swagger-ui, vertx, vertx-web]
+----
++
+Notice that the application starts up in about 0.5 seconds. The pod takes more or less 80MB of memory.
+
+. Test the Kogito Travel Agency native application using the application UI or the Swagger UI.
 
 == Lab 4: Event Driven Kogito with Kafka
 
