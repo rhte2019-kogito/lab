@@ -146,7 +146,7 @@ $ cd 01-kogito-travel-agency
 mvn clean package quarkus:dev
 ----
 +
-. If everything executed correctly, you will now see the applicatio running in _dev-mode_.
+. If everything executed correctly, you will now see the application running in _dev-mode_.
 +
 ----
 [INFO] --- quarkus-maven-plugin:0.20.0:dev (default-cli) @ kogito-travel-agency ---
