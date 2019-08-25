@@ -408,10 +408,8 @@ Using `vim`, add the following content to the file:
 +
 ----
 quarkus.infinispan-client.server-list=infinispan-server.kogito-travel-agency.svc:11222
-quarkus.swagger-ui.always-include=true
 ----
-+
-By default, Swagger UI is only available when Quarkus is started in dev or test mode. The `quarkus.swagger-ui.always-include=true` entry will make the Swagger UI available in a production deployment.
+
 .. Create a ConfigMap from the `application.properties` file:
 +
 ----
