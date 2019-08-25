@@ -300,7 +300,243 @@ image:images/kogito-swagger.png[]
 
 == Lab 3: Kogito Persistence
 
+TODO: Elaborate on persistence mechanism. 
 
+In this section of the lab we will use the `02-kogito-travel-agency` project, which is the same project as used in the previous lab, but this time with persistence enabled. We use _Infinispan_ as persistent data store for process data. +
+In the lab we will deploy the application to OpenShift. We will also build and deploy a native image to OpenShift.
+
+=== Local test of the application
+
+. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `02-kogito-travel-agency` folder.
++
+----
+$ cd 02-kogito-travel-agency
+----
+. Inspect the POM file of the project. Take note of the dependencies to `io.quarkus:quarkus-infinispan-client` and `org.kie.kogito:infinispan-persistence-addon`. This is all it takes to enable persistence using Infinispan.
+. Inspect the contents of `src/main/resources/application.properties`.
++
+----
+quarkus.infinispan-client.server-list=localhost:11222
+----
++
+The `quarkus.infinispan-client.server-list` entry defines the list of Infinispan servers for the Quarkus Infinispan client to connect to upon startup. The Quarkus Infinispan client uses the _Infinispan Hot Rod_ protocol to connect to a remote Infinispan server.
+. Start a local instance of Infinispan on the lab workstation using Docker. +
+Open a new terminal, ssh into the workstation as user `lab-user`, and run the following commands: 
++
+----
+$ sudo systemctl start docker
+$ sudo docker run -it -p 11222:11222 jboss/infinispan-server:10.0.0.Beta3
+----
++
+Let the Infinispan server start up. After a couple of seconds you will see the following output:
++
+----
+05:25:15,708 INFO  [org.jboss.as] (Controller Boot Thread) WFLYSRV0025: Infinispan Server 10.0.0.Beta3 (WildFly Core 6.0.2.Final) started in 5484ms - Started 227 of 275 services (133 services are lazy, passive or on-demand)
+----
+. Run the Kogito Travel Agency app in _dev mode_:
++
+----
+$ mvn clean compile quarkus:dev
+----
++
+.Output
+----
+2019-08-25 07:35:10,384 INFO  [io.qua.swa.run.SwaggerUiServletExtension] (main) Swagger UI available at /swagger-ui
+2019-08-25 07:35:10,937 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [172.17.42.3:11222]
+2019-08-25 07:35:10,940 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(172.17.42.3:11222), adding to the pool.
+2019-08-25 07:35:10,943 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(localhost:11222), removing from the pool.
+2019-08-25 07:35:11,022 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: 10.0.0.Beta5
+2019-08-25 07:35:11,045 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-2) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [172.17.42.3:11222]
+2019-08-25 07:35:11,225 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 5.081s. Listening on: http://0.0.0.0:8080
+2019-08-25 07:35:11,225 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, swagger-ui, vertx, vertx-web]
+----
++
+Note that the application successfully discovered the Infinispan server.
+. Check the logs of the Infinispan server. Note the following output:
++
+----
+05:35:11,172 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t1) DGISPN0001: Started travels_store ca
+che from clustered container
+05:35:11,203 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t2) DGISPN0001: Started flightBooking_st
+ore cache from clustered container
+05:35:11,219 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t3) DGISPN0001: Started hotelBooking_sto
+re cache from clustered container
+----
+. Create a couple of travel requests using the application UI or the Swagger UI. 
+. Press `Ctrl-C` to shut down the application. Keep the Infinispan server running. Start the application again in _dev mode_. Notice that the travel requests are still present.
+. At this point feel free to shut down both the application as the Infinispan server.
+
+=== Deployment to OpenShift - JVM mode
+
+. From the lab workstation, login into the OpenShift cluster using the `oc` utility as user1:
++
+----
+$ oc login -u user1 https://master00.example.com -u user1
+----
+. Create a project for the Kogito Travel Agency application
++
+----
+$ oc new-project kogito-travel-agency
+----
+. The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for an Infinispan deployment. It will create a minimal Infinispan deployment, consisting of 1 node, with disabled security,and  exposing a Hot Rod endpoint on port 11222. To deploy Infinispan on your OpenShift cluster: 
++
+----
+$ oc process -f openshift/infinispan-server.yml | oc create -f - -n kogito-travel-agency
+----
+. Follow the deployment of the Infinispan server on the OpenShift console, or use `oc`:
++
+----
+$ oc get pods -w
+----
++
+.Output
+----
+NAME                                 READY     STATUS              RESTARTS   AGE
+infinispan-server-656b846c7c-rgz8z   0/1       ContainerCreating   0          6s
+infinispan-server-656b846c7c-rgz8z   0/1       Running   0         35s
+infinispan-server-656b846c7c-rgz8z   1/1       Running   0         1m
+----
+
+. By default, the Kogito Travel Agency app will try to connect to a Infinispan server on `localhost:11222`. When deploying on OpenShift, we need to configure the application to connect a remote Infinispan instance. To override the default configuration properties we can use a ConfigMap containing an `application.properties` file which will be mounted inside the application pod.
+.. On the lab workstation, create a file `/tmp/application.properties`.
++
+----
+$ touch /tmp/application.properties
+----
++
+Using `vim`, add the following content to the file:
++
+----
+quarkus.infinispan-client.server-list=infinispan-server.kogito-travel-agency.svc:11222
+quarkus.swagger-ui.always-include=true
+----
++
+By default, Swagger UI is only available when Quarkus is started in dev or test mode. The `quarkus.swagger-ui.always-include=true` entry will make the Swagger UI available in a production deployment.
+.. Create a ConfigMap from the `application.properties` file:
++
+----
+$ oc create configmap kogito-travel-agency --from-file=/tmp/application.properties -n kogito-travel-agency 
+----
+
+. The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for a binary deployment of the Kogito Travel Agency app. It describes a BuildConfig, ImageStream, DeploymentConfig, Service and Route for the application. In this lab, we will deploy the application itself usng a binary build from the lab workstation. +
+Review the `kogito-travel-agency.yml` template file.
++
+* We use the `redhat-openjdk18-openshift` image as a builder image. In JVM mode the application requires a JVM to run.
+* The `kogito-travel-agency` configmap is mounted in the `/deployments/config` directory of the pod.
+
+. Deploy the template to the OpenShift cluster:
++
+----
+$ oc process -f openshift/kogito-travel-agency.yml | oc create -f - -n kogito-travel-agency
+----
++
+.Output
+----
+service/kogito-travel-agency created
+route.route.openshift.io/kogito-travel-agency created
+deploymentconfig.apps.openshift.io/kogito-travel-agency created
+buildconfig.build.openshift.io/kogito-travel-agency created
+imagestream.image.openshift.io/kogito-travel-agency created
+----
+
+. On the lab workstation, build the Kogito Travel Agency app:
++
+----
+$ mvn clean package -DskipTests=true
+----
++
+The project unit tests require a running local Infinispan instance, so can skip them.
+
+. Inspect the `target` folder of the project:
++
+----
+$ ls target
+----
++
+----
+drwxrwxr-x. 5 lab-user lab-user   4096 Aug 25 08:41 classes
+drwxrwxr-x. 4 lab-user lab-user   4096 Aug 25 08:41 generated-sources
+drwxrwxr-x. 3 lab-user lab-user   4096 Aug 25 08:41 generated-test-sources
+-rw-rw-r--. 1 lab-user lab-user     60 Aug 25 08:41 image_metadata.json
+-rw-rw-r--. 1 lab-user lab-user  21688 Aug 25 08:41 kogito-travel-agency-1.0-SNAPSHOT.jar
+-rw-r--r--. 1 lab-user lab-user 371650 Aug 25 08:41 kogito-travel-agency-1.0-SNAPSHOT-runner.jar
+drwxrwxr-x. 2 lab-user lab-user  20480 Aug 25 08:41 lib
+drwxrwxr-x. 2 lab-user lab-user   4096 Aug 25 08:41 maven-archiver
+drwxrwxr-x. 3 lab-user lab-user   4096 Aug 25 08:41 maven-status
+drwxrwxr-x. 3 lab-user lab-user   4096 Aug 25 08:41 test-classes
+drwxrwxr-x. 2 lab-user lab-user   4096 Aug 25 08:41 transformed-classes
+drwxrwxr-x. 6 lab-user lab-user   4096 Aug 25 08:41 wiring-classes
+----
++
+`kogito-travel-agency-1.0-SNAPSHOT-runner.jar` is a executable JAR file. It is however not an _uber-jar_ as the dependencies are copied into the target/lib directory.
+
+. Prepare for a binary build on OpenShift. 
+On your workstation, create a directory `/tmp/kogito-travel-agency`. Copy the executable application jar and the lib folder to the directory.
++
+----
+$ mkdir /tmp/kogito-travel-agency
+$ cp -r target/kogito-travel-agency-1.0-SNAPSHOT-runner.jar target/lib /tmp/kogito-travel-agency
+----
+
+. Deploy the application to OpenShift:
++
+----
+$ oc start-build kogito-travel-agency --from-dir=/tmp/kogito-travel-agency -n kogito-travel-agency
+----
++
+----
+Uploading directory "/tmp/kogito-travel-agency" as binary input for the build ...
+...........
+Uploading finished
+build.build.openshift.io/kogito-travel-agency-1 started
+----
+. Check the logs of the builder pod:
++
+----
+$ oc logs kogito-travel-agency-1-build
+----
++
+----
+Using docker-registry.default.svc:5000/openshift/redhat-openjdk18-openshift@sha256:dc84fed0f6f40975a2277c126438c8aa15c70eeac75981dbaa4b6b853eff61a6 as the s2i builder image
+==================================================================
+Starting S2I Java Build .....
+S2I source build with plain binaries detected
+Copying binaries from /tmp/src to /deployments ...
+... done
+
+Pushing image docker-registry.default.svc:5000/kogito-travel-agency/kogito-travel-agency:latest ...
+Pushed 1/6 layers, 18% complete
+Pushed 2/6 layers, 39% complete
+Pushed 3/6 layers, 64% complete
+Pushed 4/6 layers, 84% complete
+Pushed 5/6 layers, 94% complete
+Pushed 6/6 layers, 100% complete
+Push successful
+----
+. Check the logs of the application pod:
++
+----
+Starting the Java application using /opt/run-java/run-java.sh ...
+exec java -javaagent:/opt/jolokia/jolokia.jar=config=/opt/jolokia/etc/jolokia.properties -Xms63m -Xmx250m -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:+UseParallelOldGC -XX:MinHeapFreeRatio=10 -XX:MaxHeapFreeRatio=20 -XX:GCTimeRatio=4 -XX:AdaptiveSizePolicyWeight=90 -XX:MaxMetaspaceSize=100m -XX:ParallelGCThreads=1 -Djava.util.concurrent.ForkJoinPool.common.parallelism=1 -XX:CICompilerCount=2 -XX:+ExitOnOutOfMemoryError -cp . -jar /deployments/kogito-travel-agency-1.0-SNAPSHOT-runner.jar
+I> No access restrictor found, access to any MBean is allowed
+Jolokia: Agent started with URL https://10.128.0.180:8778/jolokia/ 
+2019-08-25 06:57:22,237 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.176:11222]
+2019-08-25 06:57:22,246 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(10.128.0.176:11222), adding to the pool.
+2019-08-25 06:57:22,248 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(infinispan-server.kogito-travel-agency.svc:11222), removing from the pool.
+2019-08-25 06:57:22,266 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: 10.0.0.Beta5
+2019-08-25 06:57:22,937 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.176:11222]
+2019-08-25 06:57:24,361 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 16.820s. Listening on: http://0.0.0.0:8080 
+2019-08-25 06:57:24,362 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, vertx, vertx-web]
+----
++
+Notice that the application starts up in about 15 seconds. The pod takes more or less 300MB of memory.  
+
+
+. Test the Kogito Travel Agency application using the application UI or the Swagger
+
+=== Deployment to OpenShift - Native image
+
+TODO
 
 
 == Lab 4: Event Driven Kogito with Kafka
