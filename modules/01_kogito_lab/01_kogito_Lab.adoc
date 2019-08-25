@@ -320,12 +320,11 @@ quarkus.infinispan-client.server-list=localhost:11222
 ----
 +
 The `quarkus.infinispan-client.server-list` entry defines the list of Infinispan servers for the Quarkus Infinispan client to connect to upon startup. The Quarkus Infinispan client uses the _Infinispan Hot Rod_ protocol to connect to a remote Infinispan server.
-. Start a local instance of Infinispan on the lab workstation using Docker. +
-Open a new terminal, ssh into the workstation as user `lab-user`, and run the following commands: 
+. Start a local instance of Infinispan on the lab workstation using Podman. +
+Open a new terminal, ssh into the workstation as user `lab-user`, and run the following commands:
 +
 ----
-$ sudo systemctl start docker
-$ sudo docker run -it -p 11222:11222 jboss/infinispan-server:10.0.0.Beta3
+$ sudo podman run -it -p 11222:11222 jboss/infinispan-server:10.0.0.Beta3
 ----
 +
 Let the Infinispan server start up. After a couple of seconds you will see the following output:
@@ -362,7 +361,7 @@ ore cache from clustered container
 05:35:11,219 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t3) DGISPN0001: Started hotelBooking_sto
 re cache from clustered container
 ----
-. Create a couple of travel requests using the application UI or the Swagger UI. 
+. Create a couple of travel requests using the application UI or the Swagger UI.
 . Press `Ctrl-C` to shut down the application. Keep the Infinispan server running. Start the application again in _dev mode_. Notice that the travel requests are still present.
 . At this point feel free to shut down both the application as the Infinispan server.
 
