@@ -740,7 +740,302 @@ Notice that the application starts up in about 0.5 seconds. The pod takes more o
 
 == Lab 4: Event Driven Kogito with Kafka
 
+Events are first class citizens in Kogito. The runtime emits events based on the execution context of given request. The main aim for these events is to notify 3rd parties about changes to the process instance and its data. To avoid too many events being sent and to optimise both producer and consumer side there will be only one event per process instance emitted.
+That event will consists of relevant information such as:
 
+* process instance metadata e.g. process id, process instance id, process instance state, etc
+* node instances executed, list of all node instances that have been triggered/left during the execution
+* variables - current state of variables after the execution
+
+These events will provide complete view over the process instances being executed.
+
+Events by default are only emitted when there is at least on publisher defined. There might be many event publishers that can be used to send/publish these events into different channels etc.
+
+Out of the box Kogito ships with an event publisher using Quarkus Reactive Messaging - which allows to send events to Kafka, AMQP, MQTT, Camel.
+
+Another use case for events is communication between process instances. The BPMN Message Event nodes in the Kogito runtime publish and consume messages from Kafka topics.
+
+In this lab you will explore the integration of Kogito with Kafka.
+
+In the version of the Kogito Travel Agency appliction used in this lab the event publishing mechanism has been enabled and configured to send events to a Kafka queue. 
+
+The Kogito travel booking process definition has been expanded to send a _VisaApplication_ object to a Kafka topic every time a traveler needs to apply for a visa. This is modeled with a BPMN _Message End Event_ node, where the _MessageEventDefinition_ corresponds to the name of the Quarkus messaging channel where the the message is sent to. The payload of the message (a `VisaApplication` object) is defined though a data input association.
+
+image::images/travels-process-2.png[]
+
+A second Kogito application - _Kogito Visas_ - has a process definition with a BPMN _Message Start Event_ mapped to the same Kafka topic. For every message consumed from the Kafka topic a new process instance will be created.
+
+image::images/visa-applications-process.png[]
+
+This version of the Kogito Travel Agency app is dependent on a running Kafka cluster. We could spin up a local containerized Kafka cluster, but forthe sake of simplicity, we'll deploy the app directly to OpenShift, using a native image.
+
+=== Kogito Travel Agency application
+
+. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `03-kogito-travel-agency` folder.
++
+----
+$ cd 03-kogito-travel-agency
+----
+. Create Kafka topics for the event publishing mechanism and the Kogito Travel Agency application. +
+The event publishing mechanism uses a queue named `kogito-processinstances-events`. +
+The Message End Node in de travel booking process is mapped to the queue `visaapplications`. +
+The `openshift/kafka-topics.yml` in the project folder contains Custom Resource definitions for both queues. Create the CRs in the `kafka-cluster` namespace:
++
+----
+$ oc create -f openshift/kafka-topics.yml -n kafka-cluster
+----
++
+.Output
+----
+kafkatopic.kafka.strimzi.io/visaapplications created
+kafkatopic.kafka.strimzi.io/kogito-processinstances-events created
+----
+
+. Create a new namespace `kogito2` for the Kogito Travel Agency application.
++
+----
+$ oc new-project kogito2
+----
+
+. The Kogito application is configured for persistence, so we need to deploy an Infinispan server:
++
+----
+$ oc process -f openshift/infinispan-server.yml | oc create -f - -n kogito2
+----
+
+. Review the `pom.xml` file of the the application. Notice the dependencies to `org.kie.kogito:kogito-events-reactive-messaging-addon`, `io.quarkus:quarkus-kafka-client` and `io.quarkus:quarkus-smallrye-reactive-messaging-kafka` which are required for Kafka integration.
+
+. Review the configuration file in `src/main/resources/application.properties`:
++
+----
+mp.messaging.outgoing.visaapplications.connector=smallrye-kafka
+mp.messaging.outgoing.visaapplications.topic=visaapplications
+mp.messaging.outgoing.visaapplications.value.serializer=org.acme.travels.json.VisaApplicationJsonbSerializer
+
+mp.messaging.outgoing.kogito-processinstances-events.connector=smallrye-kafka
+mp.messaging.outgoing.kogito-processinstances-events.topic=kogito-processinstances-events
+mp.messaging.outgoing.kogito-processinstances-events.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+----
++
+* The `mp.messaging.outgoing` entries map a Quarkus outgoing channel to the `smallrye-kafka` connector and the `visaapplications` and `kogito-processinstances-events` topics.
+
+. Create a configmap for the application to set the location of the Infinispan server and the Kafka broker for the messaging channels.
+.. On the lab workstation, create a file `/tmp/application.properties`. Delete the existing file from the previous lab.
++
+----
+$ rm /tmp/application.properties
+$ touch /tmp/application.properties
+----
++
+Using `vim`, add the following content to the file:
++
+----
+quarkus.infinispan-client.server-list=infinispan-server.kogito2.svc:11222
+
+mp.messaging.outgoing.visaapplications.bootstrap.servers=kafka-cluster-kafka-bootstrap.kafka-cluster.svc:9092
+
+mp.messaging.outgoing.kogito-processinstances-events.bootstrap.servers=kafka-cluster-kafka-bootstrap.kafka-cluster.svc:9092
+----
+.. Create a ConfigMap from the `application.properties` file:
++
+----
+$ oc create configmap kogito-travel-agency --from-file=/tmp/application.properties -n kogito2
+----
+
+. Build a Linux 64-bit native executable of the Kogito Travel Agency application:
++
+----
+$ mvn clean package -DskipTests=true -Pnative
+----
+
+. Build a Docker image with the native executable. The `src/main/docker` folder contains a Docker file based on a minimal RHEL8 UBI image. Build the Docker image using Podman. Tag the image as version `0.0.2` to differentiate from the version in the previous lab:
++
+----
+$ sudo podman build -f src/main/docker/Dockerfile.native -t kogito-travel-agency:0.0.2 .
+----
+. Follow the same steps as in the previous lab to push the native image to the OpenShift registry.
+. Deploy the Kogito Travel Agency application:
++
+----
+$ oc process -f openshift/kogito-travel-agency-native.yml | oc create -f - -n kogito2
+----
++
+.Output
+----
+service/kogito-travel-agency-native created
+route.route.openshift.io/kogito-travel-agency-native created
+deploymentconfig.apps.openshift.io/kogito-travel-agency-native created
+----
+
+=== Kogito Visas application
+
+. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `03-kogito-visas` folder.
++
+----
+$ cd 03-kogito-visas
+----
+
+. Review the configuration file in `src/main/resources/application.properties`:
++
+----
+mp.messaging.incoming.visaapplications.connector=smallrye-kafka
+mp.messaging.incoming.visaapplications.topic=visaapplications
+mp.messaging.incoming.visaapplications.value.deserializer=org.acme.travels.json.VisaApplicationJsonbDeserializer
+#mp.messaging.incoming.visaapplications.auto.offset.reset=earliest
+
+mp.messaging.outgoing.kogito-processinstances-events.connector=smallrye-kafka
+mp.messaging.outgoing.kogito-processinstances-events.topic=kogito-processinstances-events
+mp.messaging.outgoing.kogito-processinstances-events.value.serializer=org.apache.kafka.common.serialization.StringSerializer
+----
++
+* The `mp.messaging.outgoing` entries map a Quarkus incoming channel to the `smallrye-kafka` connector and the `visaapplications` topic.
+* The `mp.messaging.outgoing` entries map a Quarkus outgoing channel to the `smallrye-kafka` connector and the `kogito-processinstances-events` topic.
+
+. Create a configmap for the application to set the location of the Infinispan server and the Kafka broker for the messaging channels.
+.. On the lab workstation, create a file `/tmp/application.properties`. Delete the existing file from the previous lab.
++
+----
+$ rm /tmp/application.properties
+$ touch /tmp/application.properties
+----
++
+Using `vim`, add the following content to the file:
++
+----
+quarkus.http.port=8080
+
+quarkus.infinispan-client.server-list=infinispan-server.kogito2.svc:11222
+
+mp.messaging.incoming.visaapplications.bootstrap.servers=kafka-cluster-kafka-bootstrap.kafka-cluster.svc:9092
+mp.messaging.incoming.visaapplications.group.id=kogito-visa
+
+mp.messaging.outgoing.kogito-processinstances-events.bootstrap.servers=kafka-cluster-kafka-bootstrap.kafka-cluster.svc:9092
+----
+.. Create a ConfigMap from the `application.properties` file:
++
+----
+$ oc create configmap kogito-visas --from-file=/tmp/application.properties -n kogito2
+----
+
+. Build a Linux 64-bit native executable of the Kogito Travel Agency application:
++
+----
+$ mvn clean package -DskipTests=true -Pnative
+----
+
+. Build a Docker image with the native executable. The `src/main/docker` folder contains a Docker file based on a minimal RHEL8 UBI image. Build the Docker image using Podman. Tag the image as version `0.0.1`:
++
+----
+$ sudo podman build -f src/main/docker/Dockerfile.native -t kogito-visas:0.0.1 .
+----
+. Follow the same steps as in the previous lab to push the native image to the OpenShift registry.
+. Deploy the Kogito Visas application:
++
+----
+$ oc process -f openshift/kogito-visas-native.yml | oc create -f - -n kogito2
+----
++
+.Output
+----
+service/kogito-visas-native created
+route.route.openshift.io/kogito-visas-native created
+deploymentconfig.apps.openshift.io/kogito-visas-native created
+----
+
+=== Kafka Consumer application
+
+The Kogito Travel Agency and Kogito Visas applications emit events to a Kafka queue whenever a new processinstance is created or its internal state changes. In order to observe these events, we deploy a simple native Quarkus application that consumes these events and prints its contents to _stdout_.
+
+. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `kafka-consuler` folder.
++
+----
+$ cd kafka-consumer
+----
+
+. Create a configmap for the application to set the location of the Kafka broker and the topic to consume from.
+.. On the lab workstation, create a file `/tmp/application.properties`. Delete the existing file from the previous lab.
++
+----
+$ rm /tmp/application.properties
+$ touch /tmp/application.properties
+----
++
+Using `vim`, add the following content to the file:
++
+----
+mp.messaging.incoming.messages.bootstrap.servers=kafka-cluster-kafka-bootstrap.kafka-cluster.svc:9092
+mp.messaging.incoming.messages.topic=kogito-processinstances-events
+mp.messaging.incoming.messages.group.id=kafka-consumer
+----
+.. Create a ConfigMap from the `application.properties` file:
++
+----
+$ oc create configmap kafka-consumer --from-file=/tmp/application.properties -n kogito2
+----
+
+. Deploy the application:
++
+----
+$ oc process -f openshift/kafka-consumer-native.yml | oc create -f - -n kogito2
+----
+
+=== Test the application
+
+. Create a travel booking in the Kogito Travel Agency application using the application UI or the Swagger UI. +
+As an example, use the following payload:
++
+----
+{
+"traveller" : {
+"firstName" : "John",
+"lastName" : "Doe",
+"email" : "john.doe@example.com",
+"nationality" : "Polish",
+"address" : {
+"street" : "Main Street",
+"city" : "London",
+"zipCode" : "12345",
+"country" : "UK"
+}
+},
+"trip" : {
+"city" : "New York",
+"country" : "US",
+"begin" : "2019-12-10T00:00:00.000+02:00",
+"end" : "2019-12-31T00:00:00.000+02:00"
+}
+}
+----
++
+According to the rules defined in both applications, a visa application is required for this trip, and the visa application cannot be processed automatically.
+
+. Verify using the Kogito Travel Agency UI that a travel booking has been created.
++
+image:images/travel-agency-ui.png[]
+. Complete the Visa application task. Fill in a bogus passport number, and a duration of 30 (days) and submit the application.
+. Verify in the Visa application that a Visa application has been created which requires manual approval:
++
+image::images/visa-approval-ui.png[]
+
+. Check the logs of the Kafka Consumer app. Note that several events have been sent by the applications to the Kafka topic. The events contain information about the process instance, the nodes triggered and the state of the process variables: 
++
+----
+2019-08-27 01:20:25,541 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '5'
+2019-08-27 01:20:25,541 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message key: null
+2019-08-27 01:20:25,541 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message value: {"data":{"id":"f10fca96-9a9a-412f-83aa-cecfc14819f8","nodeInstances":[{"id":"82258d5b-5da4-4414-804a-20889ba8af94","nodeDefinitionId":"UserTask_1","nodeId":"4","nodeName":"Apply for visa","nodeType":"HumanTaskNode","triggerTime":"2019-08-26T23:20:25.136Z[UTC]"},{"id":"2c1dc57d-199f-42e4-b241-138a9daa2ea3","leaveTime":"2019-08-26T23:20:25.136Z[UTC]","nodeDefinitionId":"ExclusiveGateway_1","nodeId":"3","nodeName":"is visa required","nodeType":"Split","triggerTime":"2019-08-26T23:20:25.134Z[UTC]"},{"id":"ae977877-c86d-4e69-adea-fc7e599c93a6","leaveTime":"2019-08-26T23:20:25.134Z[UTC]","nodeDefinitionId":"BusinessRuleTask_1","nodeId":"2","nodeName":"Visa check","nodeType":"RuleSetNode","triggerTime":"2019-08-26T23:20:24.843Z[UTC]"},{"id":"6ef2664c-8b27-47b5-8e4f-84082622603b","leaveTime":"2019-08-26T23:20:24.843Z[UTC]","nodeDefinitionId":"StartEvent_1","nodeId":"1","nodeName":"StartProcess","nodeType":"StartNode","triggerTime":"2019-08-26T23:20:24.842Z[UTC]"}],"processId":"travels","processName":"travels","startDate":"2019-08-26T23:20:24.839Z[UTC]","state":1,"variables":{"traveller":{"address":{"city":"London","country":"UK","street":"Main Street","zipCode":"12345"},"email":"john.doe@example.com","firstName":"John","lastName":"Doe","nationality":"Polish"},"trip":{"begin":"2019-12-09T22:00:00Z[UTC]","city":"New York","country":"US","end":"2019-12-30T22:00:00Z[UTC]","visaRequired":true}}},"id":"81a6bed4-afd7-4e99-9fcd-87801f7756ab","kogitoProcessId":"travels","kogitoProcessinstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","kogitoProcessinstanceState":"1","specversion":"0.3","time":"2019-08-26T23:20:25.331Z[UTC]","type":"ProcessInstanceEvent"}
+2019-08-27 01:27:54,736 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '6'
+2019-08-27 01:27:54,736 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message key: null
+2019-08-27 01:27:54,736 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message value: {"data":{"endDate":"2019-08-26T23:27:54.656Z[UTC]","id":"7cec4f77-2441-471c-bd20-17180b88e53d","nodeInstances":[{"id":"ee146869-ea3e-4bb2-ae2d-9d47ef98f6ea","leaveTime":"2019-08-26T23:27:54.656Z[UTC]","nodeDefinitionId":"EndEvent_1","nodeId":"3","nodeName":"End Event 1","nodeType":"EndNode","triggerTime":"2019-08-26T23:27:54.656Z[UTC]"},{"id":"6c9d8327-a3f3-4138-806a-fd0bb2f9e35e","leaveTime":"2019-08-26T23:27:54.656Z[UTC]","nodeDefinitionId":"ServiceTask_1","nodeId":"2","nodeName":"Book hotel","nodeType":"WorkItemNode","triggerTime":"2019-08-26T23:27:54.655Z[UTC]"},{"id":"ad4f2763-ac5c-48ec-8fe8-bb3c2263d379","leaveTime":"2019-08-26T23:27:54.655Z[UTC]","nodeDefinitionId":"StartEvent_1","nodeId":"1","nodeName":"StartProcess","nodeType":"StartNode","triggerTime":"2019-08-26T23:27:54.655Z[UTC]"}],"parentInstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","processId":"hotelBooking","processName":"HotelBooking","rootInstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","rootProcessId":"travels","startDate":"2019-08-26T23:27:54.655Z[UTC]","state":2,"variables":{"trip":{"begin":"2019-12-09T22:00:00Z[UTC]","city":"New York","country":"US","end":"2019-12-30T22:00:00Z[UTC]","visaRequired":true},"hotel":{"address":{"city":"New York","country":"US","street":"street","zipCode":"12345"},"bookingNumber":"XX-012345","name":"Perfect hotel","phone":"09876543"},"traveller":{"address":{"city":"London","country":"UK","street":"Main Street","zipCode":"12345"},"email":"john.doe@example.com","firstName":"John","lastName":"Doe","nationality":"Polish"}}},"id":"a9708b97-65ea-4161-a7f8-98077ba2cc30","kogitoParentProcessinstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","kogitoProcessId":"hotelBooking","kogitoProcessinstanceId":"7cec4f77-2441-471c-bd20-17180b88e53d","kogitoProcessinstanceState":"2","kogitoRootProcessId":"travels","kogitoRootProcessinstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","specversion":"0.3","time":"2019-08-26T23:27:54.725Z[UTC]","type":"ProcessInstanceEvent"}
+2019-08-27 01:27:54,766 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '3'
+2019-08-27 01:27:54,766 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message key: null
+2019-08-27 01:27:54,766 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message value: {"data":{"id":"f10fca96-9a9a-412f-83aa-cecfc14819f8","nodeInstances":[{"id":"53a18bcd-70a6-4de4-bbe1-0e5582efdf53","leaveTime":"2019-08-26T23:27:54.651Z[UTC]","nodeDefinitionId":"EndEvent_2","nodeId":"13","nodeName":"Send visa application","nodeType":"EndNode","triggerTime":"2019-08-26T23:27:54.65Z[UTC]"},{"id":"477039e9-1453-4aba-a977-fafcc340ebd2","leaveTime":"2019-08-26T23:27:54.66Z[UTC]","nodeDefinitionId":"CallActivity_1","nodeId":"7","nodeName":"Book Hotel","nodeType":"SubProcessNode","triggerTime":"2019-08-26T23:27:54.652Z[UTC]"},{"id":"634107c9-9ed9-4b85-8687-6faa03497abf","nodeDefinitionId":"UserTask_2","nodeId":"10","nodeName":"Confirm travel","nodeType":"HumanTaskNode","triggerTime":"2019-08-26T23:27:54.721Z[UTC]"},{"id":"9b97b569-35cc-4f2a-9b49-1fb04a9fd9df","leaveTime":"2019-08-26T23:27:54.721Z[UTC]","nodeDefinitionId":"ParallelGateway_2","nodeId":"9","nodeName":"Join","nodeType":"Join","triggerTime":"2019-08-26T23:27:54.721Z[UTC]"},{"id":"9aea64f9-d112-4b36-9841-87402948a947","leaveTime":"2019-08-26T23:27:54.721Z[UTC]","nodeDefinitionId":"CallActivity_2","nodeId":"8","nodeName":"Book Flight","nodeType":"SubProcessNode","triggerTime":"2019-08-26T23:27:54.66Z[UTC]"},{"id":"325e767f-642c-4d34-bb0f-c16d0e74ef61","leaveTime":"2019-08-26T23:27:54.66Z[UTC]","nodeDefinitionId":"ParallelGateway_1","nodeId":"6","nodeName":"Book","nodeType":"Split","triggerTime":"2019-08-26T23:27:54.652Z[UTC]"},{"id":"8bb175ea-6ce4-42e1-acc7-0c995f49b1b8","leaveTime":"2019-08-26T23:27:54.652Z[UTC]","nodeDefinitionId":"ExclusiveGateway_2","nodeId":"5","nodeName":"Join","nodeType":"Join","triggerTime":"2019-08-26T23:27:54.652Z[UTC]"},{"id":"2b1d0914-1017-44ee-9ec8-e6c9f6ad3768","leaveTime":"2019-08-26T23:27:54.652Z[UTC]","nodeDefinitionId":"ParallelGateway_3","nodeId":"12","nodeName":"Apply for visa and continue","nodeType":"Split","triggerTime":"2019-08-26T23:27:54.649Z[UTC]"},{"id":"82258d5b-5da4-4414-804a-20889ba8af94","leaveTime":"2019-08-26T23:27:54.649Z[UTC]","nodeDefinitionId":"UserTask_1","nodeId":"4","nodeName":"Apply for visa","nodeType":"HumanTaskNode","triggerTime":"2019-08-26T23:20:25.136Z[UTC]"}],"parentInstanceId":"","processId":"travels","processName":"travels","rootInstanceId":"","rootProcessId":"","startDate":"2019-08-26T23:20:24.839Z[UTC]","state":1,"variables":{"flight":{"arrival":"2019-12-30T22:00:00Z[UTC]","departure":"2019-12-09T22:00:00Z[UTC]","flightNumber":"MX555"},"hotel":{"address":{"city":"New York","country":"US","street":"street","zipCode":"12345"},"bookingNumber":"XX-012345","name":"Perfect hotel","phone":"09876543"},"trip":{"begin":"2019-12-09T22:00:00Z[UTC]","city":"New York","country":"US","end":"2019-12-30T22:00:00Z[UTC]","visaRequired":true},"visaApplication":{"city":"New York","country":"US","duration":30,"firstName":"John","lastName":"Doe","nationality":"Polish","passportNumber":"AB12345"},"traveller":{"address":{"city":"London","country":"UK","street":"Main Street","zipCode":"12345"},"email":"john.doe@example.com","firstName":"John","lastName":"Doe","nationality":"Polish"}}},"id":"03f53c42-82af-40b3-9fe2-411a696f13ac","kogitoParentProcessinstanceId":"","kogitoProcessId":"travels","kogitoProcessinstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","kogitoProcessinstanceState":"1","kogitoRootProcessId":"","kogitoRootProcessinstanceId":"","specversion":"0.3","time":"2019-08-26T23:27:54.725Z[UTC]","type":"ProcessInstanceEvent"}
+2019-08-27 01:27:54,779 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '4'
+2019-08-27 01:27:54,779 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message key: null
+2019-08-27 01:27:54,779 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message value: {"data":{"endDate":"2019-08-26T23:27:54.661Z[UTC]","id":"0e0a619d-cfbe-458f-9857-b69cab05ef2c","nodeInstances":[{"id":"4c466f40-e9e3-4d3c-b410-ddf8827d564b","leaveTime":"2019-08-26T23:27:54.661Z[UTC]","nodeDefinitionId":"EndEvent_1","nodeId":"3","nodeName":"End Event 1","nodeType":"EndNode","triggerTime":"2019-08-26T23:27:54.661Z[UTC]"},{"id":"b21ba801-a9f6-4437-a0f0-d2c2d11dab08","leaveTime":"2019-08-26T23:27:54.661Z[UTC]","nodeDefinitionId":"ServiceTask_1","nodeId":"2","nodeName":"Book flight","nodeType":"WorkItemNode","triggerTime":"2019-08-26T23:27:54.661Z[UTC]"},{"id":"03607383-54de-4d24-9c6f-105a7f0c9fe6","leaveTime":"2019-08-26T23:27:54.661Z[UTC]","nodeDefinitionId":"StartEvent_1","nodeId":"1","nodeName":"StartProcess","nodeType":"StartNode","triggerTime":"2019-08-26T23:27:54.661Z[UTC]"}],"parentInstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","processId":"flightBooking","processName":"FlightBooking","rootInstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","rootProcessId":"travels","startDate":"2019-08-26T23:27:54.661Z[UTC]","state":2,"variables":{"flight":{"arrival":"2019-12-30T22:00:00Z[UTC]","departure":"2019-12-09T22:00:00Z[UTC]","flightNumber":"MX555"},"trip":{"begin":"2019-12-09T22:00:00Z[UTC]","city":"New York","country":"US","end":"2019-12-30T22:00:00Z[UTC]","visaRequired":true},"traveller":{"address":{"city":"London","country":"UK","street":"Main Street","zipCode":"12345"},"email":"john.doe@example.com","firstName":"John","lastName":"Doe","nationality":"Polish"}}},"id":"bf6663b8-b5d8-4cc9-adb7-1ef406f1403b","kogitoParentProcessinstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","kogitoProcessId":"flightBooking","kogitoProcessinstanceId":"0e0a619d-cfbe-458f-9857-b69cab05ef2c","kogitoProcessinstanceState":"2","kogitoRootProcessId":"travels","kogitoRootProcessinstanceId":"f10fca96-9a9a-412f-83aa-cecfc14819f8","specversion":"0.3","time":"2019-08-26T23:27:54.725Z[UTC]","type":"ProcessInstanceEvent"}
+2019-08-27 01:27:55,341 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '4'
+2019-08-27 01:27:55,341 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message key: null
+2019-08-27 01:27:55,341 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0)     Message value: {"data":{"id":"792592a6-5e48-450d-aa79-bd9eff2e4585","nodeInstances":[{"id":"b51a996c-eae1-4e38-ac71-ad0777731656","nodeDefinitionId":"UserTask_1","nodeId":"5","nodeName":"Manual visa approval","nodeType":"HumanTaskNode","triggerTime":"2019-08-26T23:27:54.946Z[UTC]"},{"id":"4cb6b4b4-7fc0-45da-8a01-61b6ff9336ea","leaveTime":"2019-08-26T23:27:54.946Z[UTC]","nodeDefinitionId":"ExclusiveGateway_1","nodeId":"3","nodeName":"Visa approved?","nodeType":"Split","triggerTime":"2019-08-26T23:27:54.944Z[UTC]"},{"id":"d911af00-7bd7-483e-8f8d-6d3dbc2e089d","leaveTime":"2019-08-26T23:27:54.944Z[UTC]","nodeDefinitionId":"BusinessRuleTask_1","nodeId":"2","nodeName":"Automatic visa approvals","nodeType":"RuleSetNode","triggerTime":"2019-08-26T23:27:54.836Z[UTC]"},{"id":"77f39a1d-c63b-4339-982e-d433cb9658f4","leaveTime":"2019-08-26T23:27:54.836Z[UTC]","nodeDefinitionId":"StartEvent_1","nodeId":"1","nodeName":"StartProcess","nodeType":"StartNode","triggerTime":"2019-08-26T23:27:54.835Z[UTC]"}],"processId":"visaApplications","processName":"ProcessVisaApplications","startDate":"2019-08-26T23:27:54.832Z[UTC]","state":1,"variables":{"visaApplication":{"approved":false,"city":"New York","country":"US","duration":30,"firstName":"John","lastName":"Doe","nationality":"Polish","passportNumber":"AB12345"}}},"id":"ca960b51-57a4-4583-a244-221e11e9f761","kogitoProcessId":"visaApplications","kogitoProcessinstanceId":"792592a6-5e48-450d-aa79-bd9eff2e4585","kogitoProcessinstanceState":"1","specversion":"0.3","time":"2019-08-26T23:27:55.249Z[UTC]","type":"ProcessInstanceEvent"}
+----
 
 
 == Lab 5: Kogito Events and Monitoring
