@@ -686,6 +686,11 @@ $ sudo podman login -u admin -p $TKN --tls-verify=false $DOCKER_REGISTRY_HOSTNAM
 ----
 $ sudo podman tag kogito-travel-agency:0.0.1  $DOCKER_REGISTRY_HOSTNAME/openshift/kogito-travel-agency:0.0.1
 ----
+.. Push the image to the OpenShift registry:
++
+----
+$ sudo podman push $DOCKER_REGISTRY_HOSTNAME/openshift/kogito-travel-agency:0.0.1 --tls-verify=false
+----
 .. Log back in as `user1`.
 +
 ----
