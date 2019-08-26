@@ -717,6 +717,8 @@ route.route.openshift.io/kogito-travel-agency-native created
 deploymentconfig.apps.openshift.io/kogito-travel-agency-native created
 ----
 
+. Check the logs of the application pod:
++
 ----
 019-08-25 17:37:56,974 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.195:11222]
 2019-08-25 17:37:56,975 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(10.128.0.195:11222), adding to the pool.
