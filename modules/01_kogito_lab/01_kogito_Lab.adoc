@@ -767,7 +767,7 @@ A second Kogito application - _Kogito Visas_ - has a process definition with a B
 
 image::images/visa-applications-process.png[]
 
-This version of the Kogito Travel Agency app is dependent on a running Kafka cluster. We could spin up a local containerized Kafka cluster, but forthe sake of simplicity, we'll deploy the app directly to OpenShift, using a native image.
+This version of the Kogito Travel Agency app is dependent on a running Kafka cluster. We could spin up a local containerized Kafka cluster, but for the sake of simplicity, we'll deploy the app directly to OpenShift, using a native image.
 
 === Kogito Travel Agency application
 
@@ -803,7 +803,7 @@ $ oc new-project kogito2
 $ oc process -f openshift/infinispan-server.yml | oc create -f - -n kogito2
 ----
 
-. Review the `pom.xml` file of the the application. Notice the dependencies to `org.kie.kogito:kogito-events-reactive-messaging-addon`, `io.quarkus:quarkus-kafka-client` and `io.quarkus:quarkus-smallrye-reactive-messaging-kafka` which are required for Kafka integration.
+. Review the `pom.xml` file of the application. Notice the dependencies to `org.kie.kogito:kogito-events-reactive-messaging-addon`, `io.quarkus:quarkus-kafka-client` and `io.quarkus:quarkus-smallrye-reactive-messaging-kafka` which are required for Kafka integration.
 
 . Review the configuration file in `src/main/resources/application.properties`:
 +
@@ -1017,7 +1017,7 @@ image:images/travel-agency-ui.png[]
 +
 image::images/visa-approval-ui.png[]
 
-. Check the logs of the Kafka Consumer app. Note that several events have been sent by the applications to the Kafka topic. The events contain information about the process instance, the nodes triggered and the state of the process variables: 
+. Check the logs of the Kafka Consumer app. Note that several events have been sent by the applications to the `kogito-processinstances-events` Kafka topic. The events contain information about the process instance, the nodes triggered and the state of the process variables: 
 +
 ----
 2019-08-27 01:20:25,541 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '5'
