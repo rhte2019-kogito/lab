@@ -96,17 +96,20 @@ image:images/book-flight-process.png[]
 
 These processes call _Hotel Booking Service_ and _Flight Booking Service_, which are both implemented as CDI beans that have hard coded logic to return a booked flight or hotel.
 
+----
 org.acme.travels.service.HotelBookingService
 org.acme.travels.service.FlightBookingService
+----
 
 Obviously this has been done for simplicity reasons. In a real application these functionalities would be implemented as microservices. However, the current implementation does show the power of Kogito processes definition integration with CDI.
 
 == Cloning the repository
-You are provided with a GitHub repository that contains 3 Kogito projects:
+You are provided with a GitHub repository that contains 4 Kogito projects:
 
 * 01-kogito-travel-agency: The base project which contains the _Booking System Service_. This project deploys as a single Quarkus application (JAR or Native Image) and does not support persistence.
 * 02-kogito-travel-agency: The base project with persistence support. This project requires Infinispan / JBoss Data Grid.
 * 03-kogito-travel-agency: Extension of project 3 with Kafka integration support to implement an Event Driven _Booking System Service_.
+* 03-kogito-visas: A second kogito project which contains the _Visa Applications_ service. The _Booking System Service_ interacts with the this service through Kafka. 
 
 The GitHub repository can be found here: https://github.com/rhte2019-kogito/kogito-travel-agency-tutorial/
 
@@ -130,7 +133,6 @@ $ cd kogito-travel-agency-tutorial
 ----
 $ git checkout rhte2019
 ----
-+
 
 
 == Lab 1: Kogito Development
@@ -160,7 +162,7 @@ $ cd 01-kogito-travel-agency
 . Run the Maven command to start the Kogito application in _dev-mode_.
 +
 ----
-mvn clean package quarkus:dev
+$ mvn clean package quarkus:dev
 ----
 +
 . If everything executed correctly, you will now see the application running in _dev-mode_.
@@ -263,7 +265,7 @@ image:images/visa-application-task.png[]
 . Open the `visa-rules.drl` file using VIM
 +
 ----
-vim src/main/resources/org/acme/travels/visa-rules.drl
+$ vim src/main/resources/org/acme/travels/visa-rules.drl
 ----
 +
 . Navigate to the rule with the name _"Polish citizens require visa to Australia"_ and change the `then` (the rule consequence) in such a way that no visa is required:
@@ -384,7 +386,7 @@ re cache from clustered container
 
 === Deployment to OpenShift - JVM mode
 
-. From the lab workstation, login into the OpenShift cluster using the `oc` utility as user1:
+. From the lab workstation, login into the OpenShift cluster using the `oc` utility as `user1`:
 +
 ----
 $ oc login -u user1 https://master00.example.com -u user1
