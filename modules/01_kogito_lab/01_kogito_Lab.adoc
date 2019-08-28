@@ -902,7 +902,6 @@ $ cd 03-kogito-visas
 mp.messaging.incoming.visaapplications.connector=smallrye-kafka
 mp.messaging.incoming.visaapplications.topic=visaapplications
 mp.messaging.incoming.visaapplications.value.deserializer=org.acme.travels.json.VisaApplicationJsonbDeserializer
-#mp.messaging.incoming.visaapplications.auto.offset.reset=earliest
 
 mp.messaging.outgoing.kogito-processinstances-events.connector=smallrye-kafka
 mp.messaging.outgoing.kogito-processinstances-events.topic=kogito-processinstances-events
@@ -1098,6 +1097,7 @@ quarkus.infinispan-client.server-list=infinispan-server.kogito2.svc:11222
 
 mp.messaging.incoming.kogito-processinstances-events.bootstrap.servers=kafka-cluster-kafka-bootstrap.kafka-cluster.svc:9092
 mp.messaging.incoming.kogito-processinstances-events.group.id=data-index-service
+mp.messaging.incoming.kogito-processinstances-events.auto.offset.reset=earliest
 
 kogito.cache.domain.template=default
 kogito.protobuf.folder=/deployments/proto
