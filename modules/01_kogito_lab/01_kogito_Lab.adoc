@@ -1207,3 +1207,93 @@ image::images/data-index-service-ui-query-2.png[]
 ----
 +
 image::images/data-index-service-ui-query-3.png[]
+
+
+=== Monitoring
+
+Kogito comes with built-in functionality to expose metrics about process and rules execution in Prometheus format. To enable this functionality, a dependency to the `org.kie.kogito:monitoring-prometheus-addon` library must be added to the project, and the Kogito Prometheus event listeners must be registered with the engine. Prometheus metrics are exposed on the `/metrics` path.
+
+Both the Kogito Travel Agency as the Kogito Visa applications have been configured to emit Prometheus metrics.
+
+In this lab, we will set up the pre-installed monitoring stack on the OpenShift cluster to capture the Kogito runtime metrics and deploy a Grafana dashboard to display the metrics.
+
+The monitoring stack on the OpenShift cluster is installed in the `monitoring` namespace. It consists of Prometheus and Grafana. The stack is managed by a set of operators, and its state defined with Kubernetes Custom Resources. It is the same stack as used in the Integreatly project.
+
+. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `monitoring` folder.
++
+----
+$ cd monitoring
+----
+. Using `oc`, login into the cluster as user `admin` - deploying the monitoring CR's require cluster admin rights on this cluster:
++
+----
+$ oc login -u admin https://master00.example.com
+----
+. Label the `kogito2` namespace with a label `monitoring key` and value `kogito`:
++
+----
+$ oc label namespace kogito2 monitoring-key=kogito 
+----
+* This registers the namespace as being watched by the monitoring operators.
+. Label the Kogito application services: 
++
+----
+$ oc label service kogito-visas monitoring=prometheus -n kogito2
+$ oc label service kogito-travel-agency monitoring=prometheus -n kogito2
+----
+. Create a ServiceMonitor Custom Resource for the labeled services. The CR will be picked up by the Prometheus operator, and corresponding Prometheus scraping targets will be created.
++
+----
+$ oc create -f openshift/service-monitor.yml -n kogito2
+----
++
+.Output
+----
+servicemonitor.monitoring.coreos.com/kogito-monitor-services created
+----
+. Verify that the Prometheus scraping targets have been created and are active.
+.. Open a browser window, and navigate to the Prometheus landing page on your cluster - https://prometheus-route-monitoring.apps-$GUID.generic.opentlc.com. Create a security exception.
++
+image::images/prometheus-landing-page.png[]
+.. In the Prometheus UI, navigate to `Status -> Targets`. Expect to see two targets (one for each Kogito runtime), with status `UP`:
++
+image::images/prometheus-targets.png[]
+.. Navigate back to the landing page and click on the `insert metric at cursor` drop-down to see a list of available metrics:
++
+image::images/prometheus-metrics.png[]
+* Note that the list mightnot show metric types for which data has not been generated yet.
+. Deploy a dashboard to Grafana. The `openshift/kogitotravel-grafana-dashboard.yml` contains a pre-built GrafanaDashboard CR which displays the metrics gathered by Prometheus.
++
+----
+$ oc create -f openshift/kogitotravel-grafana-dashboard.yml -n kogito2
+----
++
+.Output
+----
+grafanadashboard.integreatly.org/kogito-dashboard created
+----
+
+. In a browser window, navigate to the Grafan landing page - https://grafana-route-monitoring.apps-$GUID.generic.opentlc.com. Click on the `Home` dropdown and select the `KogitoTravel dashboard`:
++
+image::images/grafana-home-page.png[]
++
+image::images/grafana-kogitotravel-dashboard.png[]
+
+. Create some travel bookings and visa applications to generate data for the dashboard.
+
+. The Grafana dashboard is read-only for anonymous users. If you want to edit the dashboard, proceed as follows:
+.. Edit the `grafana-config` ConfigMap in the `monitoring` namespace. Set `disable_login_form` to false in the `auth` section:
++
+----
+[auth]
+# Set to true to disable (hide) the login form, useful if you use OAuth, defaults to false.
+disable_login_form = false
+----
+.. Scale the Grafana deployment down and up again to force the creation of a new pod with the modified configmap mounted.
+.. In a browser window, navigate to the Grafana landing page, click on the `sign-in` button on the lower left, and log in with the admin username and password as specified in the `grafana-config` ConfigMap.
+.. Now you can edit and adjust the dashboard to your liking:
++
+image::images/grafana-kogitotravel-dashboard-edit.png[]
+
+
+Congratulations! You've reached the end of this lab.
