@@ -1038,4 +1038,151 @@ image::images/visa-approval-ui.png[]
 ----
 
 
-== Lab 5: Kogito Events and Monitoring
+== Lab 5: Kogito Data Index Service
+
+The _Kogito Data Index Service_ is a Quarkus based application that aims to capture and index data produced by one more Kogito runtime services. It consumes the events emitted by the Kogito runtime event publisher and stores and indexes them in an Infinispan cluster.
+
+image::images/data-index-architecture.jpg[]
+
+The Data Index Service is not intended to be used as permanent storage or audit log information. The focus is to make business domain data easily accessible for processes that are currently in progress.
+
+In its current version, it uses Kakfa messaging to consume _CloudEvents_ based messages from Kogito runtimes, process and index the information for later consumption via GraphQL queries.
+
+The Data Index Service is capable of indexing custom process models, if it has access to the Protobuf definition files of the model.
+
+The Data Index Service is bundled with the _GraphiQL_ (https://github.com/graphql/graphiql) UI, which allows exploring and querying the available data model. Alternatively, it is also possible to use a GraphQL client API to communicate with the exposed GraphQL endpoint.
+
+In this lab we will deploy the Data Index Service to OpenShift, and explore its indexing and querying functionalities.
+
+. From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `data-index-service` folder.
++
+----
+$ cd data-index-service
+----
+
+. Create a ConfigMap for the Data Index Service to set the location of the Infinispan server and the Kafka broker.
+.. On the lab workstation, create a file `/tmp/application.properties`. Delete the existing file from the previous lab.
++
+----
+$ rm /tmp/application.properties
+$ touch /tmp/application.properties
+----
++
+Using `vim`, add the following content to the file:
++
+----
+quarkus.vertx-http.port=8080
+
+quarkus.infinispan-client.server-list=infinispan-server.kogito2.svc:11222
+
+mp.messaging.incoming.kogito-processinstances-events.bootstrap.servers=kafka-cluster-kafka-bootstrap.kafka-cluster.svc:9092
+mp.messaging.incoming.kogito-processinstances-events.group.id=data-index-service
+
+kogito.cache.domain.template=default
+kogito.protobuf.folder=/deployments/proto
+----
++
+* `kogito.cache.domain.template` is the Infinispan cache template used by the Data Index Service. This tempate must exist on the Infinispan server.
+* `kogito.protobuf.folder` is the directory where the Data Index Service looks for Protobuf definition files for domain specific models. 
++
+.. Create a ConfigMap from the `application.properties` file:
++
+----
+$ oc create configmap data-index-service --from-file=/tmp/application.properties -n kogito2
+----
+
+. Create a ConfigMap for the Protobuf files for the Data Index Service.
+.. The Protobuf definition files for the domain models for the Kogito Travel Agency and Visas applications are generated when the project is build. They are stored in the `target/classes/persistence` directory of the project.
++
+----
+$ ls ../03-kogito-travel-agency/target/classes/persistence
+----
++
+.Output
+----
+kogito-application.proto  travels.proto
+----
+
+.. Create a ConfigMap from the Protobuf files:
++
+----
+$ oc create configmap data-index-service-proto --from-file=../03-kogito-travel-agency/target/classes/persistence/travels.proto --from-file=../03-kogito-visas/target/classes/persistence/visaApplications.proto -n kogito2
+----
+
+. Deploy the Data Index Service on OpenShift. We use a pre-built image of the application.
++
+----
+$ oc process -f openshift/data-index-service.yml | oc create -f - -n kogito2
+----
++
+.Output
+----
+service/data-index-service created
+route.route.openshift.io/data-index-service created
+deployment.apps/data-index-service created
+----
+
+. Create a number of travel applications and visa applications using the Kogito Travel Agency and Kogito Visas UI (or the Swagger UI)
+
+. In a browser window, navigate to the URL of the Data Index Service.
++
+image::images/data-index-service-ui.png[]
+
+. In the left pane of the UI, create a GraphQL query. Notice the autocomplete features of the UI. For example, to query for all the process instances in the Kogito runtimes:
++
+----
+{
+  ProcessInstances {
+    id
+    processId
+    state
+    variables
+  }
+}
+----
++
+image::images/data-index-service-ui-query.png[]
+
+. It is possible to filter on fields. For example, to query for active process instances of processId `travels`:
++
+----
+{
+  ProcessInstances(filter: {state: ACTIVE, limit: 10, processId: "travels"}) {
+    id
+    processId
+    state
+    variables
+  }
+}
+----
+
+. The Data Index Service knows about the domain specific models used in the Kogito runtimes, so you can create queries using these models:
++
+----
+{
+  Travels {
+    traveller {
+      firstName
+      lastName
+      nationality
+    }
+  }
+}
+----
++
+image::images/data-index-service-ui-query-2.png[]
++
+----
+{
+  VisaApplications {
+    visaApplication {
+      firstName
+      lastName
+      duration
+      country
+    }    
+  }
+}
+----
++
+image::images/data-index-service-ui-query-3.png[]
