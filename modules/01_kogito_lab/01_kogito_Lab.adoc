@@ -419,7 +419,7 @@ $ oc create configmap kogito-travel-agency --from-file=/tmp/application.properti
 Review the `kogito-travel-agency.yml` template file.
 +
 * We use the `redhat-openjdk18-openshift` image as a builder image. In JVM mode the application requires a JVM to run.
-* The `kogito-travel-agency` configmap is mounted in the `/deployments/config` directory of the pod.
+* The `kogito-travel-agency` ConfigMap is mounted in the `/deployments/config` directory of the pod.
 
 . Deploy the template to the OpenShift cluster:
 +
@@ -707,7 +707,7 @@ $ oc scale dc kogito-travel-agency --replicas=0 -n kogito
 Review the `kogito-travel-agency-native.yml` template file.
 +
 * The DeploymentConfig points to the imagestream of the image we pushed to the OpenShift registry.
-* The `kogito-travel-agency` configmap is mounted in the `/work/config` directory of the pod.
+* The `kogito-travel-agency` ConfigMap is mounted in the `/work/config` directory of the pod.
 
 . Deploy the template to the OpenShift cluster:
 +
@@ -748,6 +748,8 @@ That event will consists of relevant information such as:
 * variables - current state of variables after the execution
 
 These events will provide complete view over the process instances being executed.
+
+The event format follows the CloudEvents (https://cloudevents.io) specification.
 
 Events by default are only emitted when there is at least on publisher defined. There might be many event publishers that can be used to send/publish these events into different channels etc.
 
@@ -819,7 +821,7 @@ mp.messaging.outgoing.kogito-processinstances-events.value.serializer=org.apache
 +
 * The `mp.messaging.outgoing` entries map a Quarkus outgoing channel to the `smallrye-kafka` connector and the `visaapplications` and `kogito-processinstances-events` topics.
 
-. Create a configmap for the application to set the location of the Infinispan server and the Kafka broker for the messaging channels.
+. Create a ConfigMap for the application to set the location of the Infinispan server and the Kafka broker for the messaging channels.
 .. On the lab workstation, create a file `/tmp/application.properties`. Delete the existing file from the previous lab.
 +
 ----
@@ -952,7 +954,7 @@ The Kogito Travel Agency and Kogito Visas applications emit events to a Kafka qu
 $ cd kafka-consumer
 ----
 
-. Create a configmap for the application to set the location of the Kafka broker and the topic to consume from.
+. Create a ConfigMap for the application to set the location of the Kafka broker and the topic to consume from.
 .. On the lab workstation, create a file `/tmp/application.properties`. Delete the existing file from the previous lab.
 +
 ----
@@ -1017,7 +1019,7 @@ image:images/travel-agency-ui.png[]
 +
 image::images/visa-approval-ui.png[]
 
-. Check the logs of the Kafka Consumer app. Note that several events have been sent by the applications to the `kogito-processinstances-events` Kafka topic. The events contain information about the process instance, the nodes triggered and the state of the process variables: 
+. Check the logs of the Kafka Consumer app. Note that several events have been sent by the Kogito runtimes to the `kogito-processinstances-events` Kafka topic. The events contain information about the process instance, the nodes triggered and the state of the process variables: 
 +
 ----
 2019-08-27 01:20:25,541 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '5'
