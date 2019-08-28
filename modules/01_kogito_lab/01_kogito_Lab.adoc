@@ -17,7 +17,7 @@
 
 A lab environment is provided to you. The environment consists of:
 
-* An Openshift cluster.
+* A dedicated Openshift 3.11 cluster.
 * A virtual machine with developer tools (git, JDK, Maven, GraalVM) installed.
 
 To obtain access to your lab environment:
@@ -63,6 +63,23 @@ Login successful.
 * Your OpenShift cluster uses self-signed certificates, so expect a security warning in the browser. Create a security exception and proceed.
 * Login with user `user1` and the password provided by the lab instructor.
 
+. Check the namespaces in your OpenShift cluster:
++
+----
+$ oc get projects
+----
++
+.Output
+----
+kafka-cluster                  Active
+monitoring                     Active
+----
++
+* The `kafka-cluster` namespace contains a Strimzi/Kafka deployment.
+* The `monitoring` namespace contains a monitoring stack consisting of Prometheus and Grafana.
+
+WARNING: Please perform all lab activities - except those involving a browser - on the workstation virtual machine. +
+While it is possible to perform the lab on your laptop - provided you have all the required tools installed - we ask you not to do so, in order to preserve network bandwith, especially when doing Maven builds or uploading/downloading Docker images.
 
 == Use Case
 
