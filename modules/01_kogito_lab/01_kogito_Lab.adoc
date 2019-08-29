@@ -246,20 +246,20 @@ image:images/travels-list.png[]
 +
 image:images/visa-application-task.png[]
 +
- Let's now change this rule in such a way that a traveller from Poland does *not* require a visa when travelling to Australia. We will change the rule in our _DRL_ file and demonstrate the _hot-reload_ feature of Kogito.
+Let's now change this rule in such a way that a traveller from Poland does *not* require a visa when travelling to Australia. We will change the rule in our _DRL_ file and demonstrate the _hot-reload_ feature of Kogito.
 +
- . Open a new SSH session to your workstation. This allows us to change one of our source files, while we keep our application running in _dev-mode_ in our other terminal.
- +
- ----
- $ export GUID=<your GUID obtained from the GuidGrabber>
- $ ssh lab-user@workstation-$GUID.rhpds.opentlc.com
- ----
- * When prompted, enter the password provided by the instructor.
- . Navigate to the project folder:
- +
- ----
- $ cd kogito-travel-agency-tutorial/01-kogito-travel-agency
- ----
+. Open a new SSH session to your workstation. This allows us to change one of our source files, while we keep our application running in _dev-mode_ in our other terminal.
++
+----
+$ export GUID=<your GUID obtained from the GuidGrabber>
+$ ssh lab-user@workstation-$GUID.rhpds.opentlc.com
+----
+* When prompted, enter the password provided by the instructor.
+. Navigate to the project folder:
++
+----
+$ cd kogito-travel-agency-tutorial/01-kogito-travel-agency
+----
 . Open the `visa-rules.drl` file using VIM
 +
 ----
@@ -297,7 +297,7 @@ image:images/booking-without-visa-hot-reload.png[]
 ----
 +
 . Stop the application by using `Ctrl+C`
-+
+
 We've seen the _hot-reload_ semantics of Kogito in action. Next we will look at how Kogito applications expose their RESTful API and how they adapt to your domain data.
 
 
@@ -315,8 +315,8 @@ A good way to demonstrate this is to inspect the Swagger documentation of our _K
 . Inspect the Swagger documentation. Note that the API defines RESTful resources like `Travel` and `VisaApplication` instead of `Process` and `Tasks`.
 image:images/kogito-swagger.png[]
 
-Travel request can be started via Swagger UI - using its "Try out" option. Locate `/travels` endpoint with `POST` method
-+
+Travel request can be started via Swagger UI - using its "Try out" option. Locate `/travels` endpoint with `POST` method with following payload
+
 ----
 {
 	"traveller" : {
@@ -339,7 +339,7 @@ Travel request can be started via Swagger UI - using its "Try out" option. Locat
 	}
 }
 ----
-+
+
 This will initiate new travel request which should be directly visible in the UI of the Kogito Travel Agency.
 
 == Lab 3: Kogito Persistence
