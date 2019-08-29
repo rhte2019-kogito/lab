@@ -109,7 +109,7 @@ You are provided with a GitHub repository that contains 4 Kogito projects:
 * 01-kogito-travel-agency: The base project which contains the _Booking System Service_. This project deploys as a single Quarkus application (JAR or Native Image) and does not support persistence.
 * 02-kogito-travel-agency: The base project with persistence support. This project requires Infinispan / JBoss Data Grid.
 * 03-kogito-travel-agency: Extension of project 3 with Kafka integration support to implement an Event Driven _Booking System Service_.
-* 03-kogito-visas: A second kogito project which contains the _Visa Applications_ service. The _Booking System Service_ interacts with the this service through Kafka. 
+* 03-kogito-visas: A second kogito project which contains the _Visa Applications_ service. The _Booking System Service_ interacts with the this service through Kafka.
 
 The GitHub repository can be found here: https://github.com/rhte2019-kogito/kogito-travel-agency-tutorial/
 
@@ -128,11 +128,6 @@ $ cd kogito-travel-agency-tutorial
 ----
 +
 . This folder contains the 3 projects that we will use during this lab.
-. Switch to the `rhte2019` branch of the repository.
-+
-----
-$ git checkout rhte2019
-----
 
 
 == Lab 1: Kogito Development
@@ -244,12 +239,15 @@ What we can see is that, depending on the destination country, a `Traveller` fro
 image:images/booking-with-visa.png[]
 +
 . A new entry should appear in the list of travels. The entry shows that a visa is required, indicating that the business rules have determined that a traveller from Poland travelling to Australia requires a visa.
++
 image:images/travels-list.png[]
++
 . Click on the _"Tasks"_ button. A task named _"Visa Application"_ should appear.
++
 image:images/visa-application-task.png[]
-
++
  Let's now change this rule in such a way that a traveller from Poland does *not* require a visa when travelling to Australia. We will change the rule in our _DRL_ file and demonstrate the _hot-reload_ feature of Kogito.
-
++
  . Open a new SSH session to your workstation. This allows us to change one of our source files, while we keep our application running in _dev-mode_ in our other terminal.
  +
  ----
@@ -297,8 +295,10 @@ image:images/booking-without-visa-hot-reload.png[]
 2019-08-23 13:40:58,780 INFO  [io.quarkus] (executor-thread-1) Installed features: [cdi, kogito, resteasy, resteasy-jsonb, smallrye-openapi, swagger-ui]
 2019-08-23 13:40:58,780 INFO  [io.qua.dev] (executor-thread-1) Hot replace total time: 1.612s
 ----
-
-We've seen the _hot-reload semantics of Kogito in action. Next we will look at how Kogito applications expose their RESTful API and how they adapt to your domain data.
++
+. Stop the application by using `Ctrl+C`
++
+We've seen the _hot-reload_ semantics of Kogito in action. Next we will look at how Kogito applications expose their RESTful API and how they adapt to your domain data.
 
 
 == Lab 2: Domain Driven Business Applications
@@ -315,11 +315,46 @@ A good way to demonstrate this is to inspect the Swagger documentation of our _K
 . Inspect the Swagger documentation. Note that the API defines RESTful resources like `Travel` and `VisaApplication` instead of `Process` and `Tasks`.
 image:images/kogito-swagger.png[]
 
-*TODO*: Have people start a Travel via the Swagger UI.
+Travel request can be started via Swagger UI - using its "Try out" option. Locate `/travels` endpoint with `POST` method
++
+----
+{
+	"traveller" : {
+		"firstName" : "Jan",
+		"lastName" : "Kowalski",
+		"email" : "jan.kowalski@example.com",
+		"nationality" : "Polish",
+		"address" : {
+			"street" : "polna",
+			"city" : "Krakow",
+			"zipCode" : "32000",
+			"country" : "Poland"
+		}
+	},
+	"trip" : {
+		"city" : "New York",
+		"country" : "US",
+		"begin" : "2019-12-10T00:00:00.000+02:00",
+		"end" : "2019-12-15T00:00:00.000+02:00"
+	}
+}
+----
++
+This will initiate new travel request which should be directly visible in the UI of the Kogito Travel Agency.
 
 == Lab 3: Kogito Persistence
 
-TODO: Elaborate on persistence mechanism.
+Kogito supports a runtime persistence for workflows. That allows users to configure key value based storage backed by Infinispan to persist data (including active nodes and process instance variables) to preserve it across restarts.
+
+Runtime persistence focuses mainly on storing data that are required to resume workflow execution for particular process instance. Regardless if the process is public or provide as long as it’s not completed it subject for persistence.
+
+*Node instances*
+
+Node instances that are currently active, so called wait states, are persisted when process instance finished execution but have not reached end state (completed or aborted). This means that only information required to resume are persisted. There might be one or more active nodes instances stored at any given point in time.
+
+*Process instance variables*
+
+All data that are included in the process instance are stored together with the process instance itself. These must be marshalled into a bytes format so it can be easily transferred over the wire and persisted into the key value storage. The marshalling and unmarshalling is implemented based on ProtoBuf and requires to have schema and marshallers available to know how to deal with given type of data.
 
 In this section of the lab we will use the `02-kogito-travel-agency` project, which is the same project as used in the previous lab, but this time with persistence enabled. We use _Infinispan_ as persistent data store for process data. +
 In the lab we will deploy the application to OpenShift. We will also build and deploy a native image to OpenShift.
@@ -549,6 +584,14 @@ Notice that the application starts up in about 15 seconds. The pod takes more or
 
 
 . Test the Kogito Travel Agency application using the application UI or the Swagger UI.
++
+----
+http://kogito-travel-agency-kogito.apps-<GUID>.generic.opentlc.com
+----
++
+----
+http://kogito-travel-agency-kogito.apps-<GUID>.generic.opentlc.com/swagger-ui/
+----
 
 === Deployment to OpenShift - Native image
 
@@ -749,7 +792,7 @@ deploymentconfig.apps.openshift.io/kogito-travel-agency-native created
 2019-08-25 17:37:56,975 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(infinispan-server.kogito-travel-agency.svc:11222), removing from the pool.
 2019-08-25 17:37:56,977 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: null
 2019-08-25 17:37:57,087 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-2) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.195:11222]
-2019-08-25 17:37:57,296 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.486s. Listening on: http://0.0.0.0:8080 
+2019-08-25 17:37:57,296 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.486s. Listening on: http://0.0.0.0:8080
 2019-08-25 17:37:57,297 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, swagger-ui, vertx, vertx-web]
 ----
 +
@@ -778,7 +821,7 @@ Another use case for events is communication between process instances. The BPMN
 
 In this lab you will explore the integration of Kogito with Kafka.
 
-In the version of the Kogito Travel Agency appliction used in this lab the event publishing mechanism has been enabled and configured to send events to a Kafka queue. 
+In the version of the Kogito Travel Agency appliction used in this lab the event publishing mechanism has been enabled and configured to send events to a Kafka queue.
 
 The Kogito travel booking process definition has been expanded to send a _VisaApplication_ object to a Kafka topic every time a traveler needs to apply for a visa. This is modeled with a BPMN _Message End Event_ node, where the _MessageEventDefinition_ corresponds to the name of the Quarkus messaging channel where the the message is sent to. The payload of the message (a `VisaApplication` object) is defined though a data input association.
 
@@ -875,6 +918,17 @@ $ mvn clean package -DskipTests=true -Pnative
 $ sudo podman build -f src/main/docker/Dockerfile.native -t kogito-travel-agency:0.0.2 .
 ----
 . Follow the same steps as in the previous lab to push the native image to the OpenShift registry.
+.. Tag the image
++
+----
+$ sudo podman tag kogito-travel-agency:0.0.2  $DOCKER_REGISTRY_HOSTNAME/openshift/kogito-travel-agency:0.0.2
+----
+.. Push the image to the OpenShift registry:
++
+----
+$ sudo podman push $DOCKER_REGISTRY_HOSTNAME/openshift/kogito-travel-agency:0.0.2 --tls-verify=false
+----
+
 . Deploy the Kogito Travel Agency application:
 +
 ----
@@ -949,6 +1003,17 @@ $ mvn clean package -DskipTests=true -Pnative
 $ sudo podman build -f src/main/docker/Dockerfile.native -t kogito-visas:0.0.1 .
 ----
 . Follow the same steps as in the previous lab to push the native image to the OpenShift registry.
+.. Tag the image
++
+----
+$ sudo podman tag kogito-visas:0.0.1  $DOCKER_REGISTRY_HOSTNAME/openshift/kogito-visas:0.0.1
+----
+.. Push the image to the OpenShift registry:
++
+----
+$ sudo podman push $DOCKER_REGISTRY_HOSTNAME/openshift/kogito-visas:0.0.1 --tls-verify=false
+----
+
 . Deploy the Kogito Visas application:
 +
 ----
@@ -1037,7 +1102,7 @@ image:images/travel-agency-ui.png[]
 +
 image::images/visa-approval-ui.png[]
 
-. Check the logs of the Kafka Consumer app. Note that several events have been sent by the Kogito runtimes to the `kogito-processinstances-events` Kafka topic. The events contain information about the process instance, the nodes triggered and the state of the process variables: 
+. Check the logs of the Kafka Consumer app. Note that several events have been sent by the Kogito runtimes to the `kogito-processinstances-events` Kafka topic. The events contain information about the process instance, the nodes triggered and the state of the process variables:
 +
 ----
 2019-08-27 01:20:25,541 INFO  [com.red.bti.MessageSource] (vert.x-eventloop-thread-0) Consumed message from topic 'kogito-processinstances-events', partition '5'
@@ -1104,7 +1169,7 @@ kogito.protobuf.folder=/deployments/proto
 ----
 +
 * `kogito.cache.domain.template` is the Infinispan cache template used by the Data Index Service. This tempate must exist on the Infinispan server.
-* `kogito.protobuf.folder` is the directory where the Data Index Service looks for Protobuf definition files for domain specific models. 
+* `kogito.protobuf.folder` is the directory where the Data Index Service looks for Protobuf definition files for domain specific models.
 +
 .. Create a ConfigMap from the `application.properties` file:
 +
@@ -1201,7 +1266,7 @@ image::images/data-index-service-ui-query-2.png[]
       lastName
       duration
       country
-    }    
+    }
   }
 }
 ----
@@ -1232,10 +1297,10 @@ $ oc login -u admin https://master00.example.com
 . Label the `kogito2` namespace with a label `monitoring key` and value `kogito`:
 +
 ----
-$ oc label namespace kogito2 monitoring-key=kogito 
+$ oc label namespace kogito2 monitoring-key=kogito
 ----
 * This registers the namespace as being watched by the monitoring operators.
-. Label the Kogito application services: 
+. Label the Kogito application services:
 +
 ----
 $ oc label service kogito-visas monitoring=prometheus -n kogito2
