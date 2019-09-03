@@ -431,6 +431,11 @@ $ oc login -u user1 https://master00.example.com -u user1
 ----
 $ oc new-project kogito
 ----
+. Give the default service account `view` privileges in the project:
++
+----
+$ oc adm policy add-role-to-user view -z default -n kogito
+----
 . The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for an Infinispan deployment. It will create a minimal Infinispan deployment, consisting of 1 node, with disabled security,and  exposing a Hot Rod endpoint on port 11222. To deploy Infinispan on your OpenShift cluster:
 +
 ----
