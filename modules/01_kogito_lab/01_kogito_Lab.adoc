@@ -42,7 +42,7 @@ $ ssh lab-user@workstation-$GUID.rhpds.opentlc.com
 . From the workstation, you can log into the OpenShift cluster using the `oc` utility:
 +
 ----
-$ oc login -u user1 https://master00.example.com -u user1
+$ oc login -u user1 https://master00.example.com
 ----
 +
 .Sample output
