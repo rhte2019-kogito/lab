@@ -25,7 +25,7 @@ To obtain access to your lab environment:
 . In a browser window, navigate to the RHTE _GuidGrabber_ at https://www.opentlc.com/gg/gg.cgi?profile=???
 +
 image::images/guid_grabber_1.png[]
-. Select the *Lab Code* : `S003 - Cloud-Native and Serverless Processes and Decisions with jBPM, Drools and Quarkus`
+. Select the *Lab Code* : `R2016 - Cloud-Native and Serverless Processes and Decisions with jBPM, Drools and Quarkus`
 . Enter the *Activation Key* provided by your instructor.
 . Enter your *E-Mail Address*.
 . Click *Submit*
