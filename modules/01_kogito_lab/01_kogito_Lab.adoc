@@ -792,16 +792,16 @@ deploymentconfig.apps.openshift.io/kogito-travel-agency-native created
 . Check the logs of the application pod:
 +
 ----
-019-08-25 17:37:56,974 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.195:11222]
-2019-08-25 17:37:56,975 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(10.128.0.195:11222), adding to the pool.
-2019-08-25 17:37:56,975 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(infinispan-server.kogito-travel-agency.svc:11222), removing from the pool.
-2019-08-25 17:37:56,977 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: null
-2019-08-25 17:37:57,087 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-2) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.0.195:11222]
-2019-08-25 17:37:57,296 INFO  [io.quarkus] (main) Quarkus 999-SNAPSHOT started in 0.486s. Listening on: http://0.0.0.0:8080
-2019-08-25 17:37:57,297 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, swagger-ui, vertx, vertx-web]
+2019-09-09 15:06:26,854 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.1.17:11222]
+2019-09-09 15:06:26,855 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(10.128.1.17:11222), adding to the pool.
+2019-09-09 15:06:26,855 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(infinispan-server.kogito.svc:11222), removing from the pool.
+2019-09-09 15:06:26,858 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: null
+2019-09-09 15:06:26,884 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-2) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.1.17:11222]
+2019-09-09 15:06:27,281 INFO  [io.quarkus] (main) Quarkus 0.21.2 started in 0.628s. Listening on: http://[::]:8080
+2019-09-09 15:06:27,281 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, swagger-ui]
 ----
 +
-Notice that the application starts up in about 0.5 seconds. The pod takes more or less 80MB of memory.
+Notice that the application starts up in about 0.6 seconds. The pod takes more or less 80MB of memory.
 
 . Test the Kogito Travel Agency native application using the application UI or the Swagger UI.
 
