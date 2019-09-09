@@ -805,6 +805,112 @@ Notice that the application starts up in about 0.6 seconds. The pod takes more o
 
 . Test the Kogito Travel Agency native application using the application UI or the Swagger UI.
 
+=== Deployment to OpenShift - Native image with S2i
+
+In this section of the lab, we are going to leverage the _S2I_ build mechanism of OpenShift to build a native image for the Kogito application. We use Kogito's _GraalVM Native S2I Builder_, and therefore do not need a Dockerfile when using this this approach. You do not need to locally clone the Git repository, as it will be directly built inside OpenShift. After the S2I build you are going to use a _chained build_ to produce a runner image that is minimal in size and does not contain all the dependencies required to build the application.
+
+. Review the `openshift/kogito-travel-agency-s2i.yml` template for the S2i build.
+* This template creates an Imagestream for the Kogito Native S2I builder image, and a BuildConfig and Imagestream for an S2i build from the source code of the application as hosted on Github.
+* A native build consumes consumes considerable memory and CPU, so the BuildConfig is configured with appropriate resource requests and limits (2 CPU cores, 6GB of RAM).
+. Deploy the template for the S2I build:
++
+----
+$ oc process -f openshift/kogito-travel-agency-s2i.yml | oc create -f - -n kogito
+----
++
+----
+buildconfig.build.openshift.io/kogito-travel-agency-s2i created
+imagestream.image.openshift.io/kogito-quarkus-ubi8-s2i created
+imagestream.image.openshift.io/kogito-travel-agency-s2i created
+----
+. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. At the end of the build you shouldsee the following in the logs:
++
+----
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]   (typeflow):  76,100.88 ms                               
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]    (objects):  52,111.26 ms                               
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]   (features):   1,568.30 ms                               
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]     analysis: 131,757.36 ms                               
+Printing call tree to /tmp/src/target/reports/call_tree_kogito-travel-agency-1.0-SNAPSHOT-runner_20190909
+_192311.txt
+Printing list of used classes to /tmp/src/target/reports/used_classes_kogito-travel-agency-1.0-SNAPSHOT-r
+unner_20190909_192316.txt
+Printing list of used packages to /tmp/src/target/reports/used_packages_kogito-travel-agency-1.0-SNAPSHOT
+-runner_20190909_192316.txt
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]     (clinit):   1,305.23 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]     universe:   5,460.10 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]      (parse):  16,560.98 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]     (inline):  30,133.69 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]    (compile): 141,889.96 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]      compile: 191,982.13 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]        image:   6,631.37 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]        write:   1,075.44 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]      [total]: 383,593.53 ms
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  07:49 min
+[INFO] Finished at: 2019-09-09T19:26:42Z
+[INFO] ------------------------------------------------------------------------
+---> Installing application binaries
+'target/kogito-travel-agency-1.0-SNAPSHOT-runner' -> '/home/kogito/bin/kogito-travel-agency-1.0-SNAPSHOT-
+runner'
+---> Copy image metadata file...
+'/tmp/src/target/image_metadata.json' -> '/tmp/.s2i/image_metadata.json'
+'/tmp/src/target/image_metadata.json' -> '/home/kogito/bin/image_metadata.json'
+---> Copy native java libraries for ssl handling...
+'/usr/share/graalvm/jre/lib/amd64/libsunec.so' -> '/home/kogito/bin/libsunec.so'
+
+Pushing image docker-registry.default.svc:5000/kogito/kogito-travel-agency-s2i:latest ...
+Pushed 3/4 layers, 76% complete
+Pushed 4/4 layers, 100% complete
+Push successful
+----
+. Review the template for the chained build:
+* The template defines an ImageStream for the Kogito S2I runktime image.
+* The template also defines a BuildConfig which takes the binary built in the previous step as input. The binary is copied to the `/home/kogito/bin` directory of the runtime image.
+* The template also defines a DeploymentConfig, Service and Route for the application.
+* The `kogito-travel-agency` ConfigMap is mounted to the `/home/kogito/config` directory of the runtime pod.
+. Deploy the template for the chained build:
++
+----
+$ oc process -f openshift/kogito-travel-agency-runtime.yml | oc create -f - -n kogito
+----
++
+----
+buildconfig.build.openshift.io/kogito-travel-agency-runtime created
+imagestream.image.openshift.io/kogito-quarkus-ubi8 created
+imagestream.image.openshift.io/kogito-travel-agency-runtime created
+service/kogito-travel-agency-runtime created
+route.route.openshift.io/kogito-travel-agency-runtime created
+deploymentconfig.apps.openshift.io/kogito-travel-agency-runtime created
+----
+. The chained build starts automatically. Using `oc` client follow the logs of the chained build:
++
+----
+Using quay.io/kiegroup/kogito-quarkus-ubi8@sha256:ca7451ecd9e14e9ad5f5dd664f1639fb367cbfc2d07b535c956cd0c284afbb15 as the s2i builder image
+---> Application binaries found and ready to use
+---> Adding custom labels...
+renamed '/home/kogito/bin/image_metadata.json' -> '/tmp/.s2i/image_metadata.json'
+
+Pushing image docker-registry.default.svc:5000/kogito/kogito-travel-agency-runtime:latest ...
+Pushed 0/4 layers, 2% complete
+Pushed 1/4 layers, 25% complete
+Push successful
+----
+. Once the chained build is finished, the application is deployed. Check the log of the application pod:
++
+----
+2019-09-09 22:34:30,847 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.1.17:11222]
+2019-09-09 22:34:30,848 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004014: New server added(10.128.1.17:11222), adding to the pool.
+2019-09-09 22:34:30,848 INFO  [org.inf.cli.hot.imp.tra.net.ChannelFactory] (HotRod-client-async-pool-1-1) ISPN004016: Server not in cluster anymore(infinispan-server.kogito.svc:11222), removing from the pool.
+2019-09-09 22:34:30,852 INFO  [org.inf.cli.hot.RemoteCacheManager] (main) ISPN004021: Infinispan version: null
+2019-09-09 22:34:30,875 INFO  [org.inf.cli.hot.imp.pro.Codec] (HotRod-client-async-pool-1-1) ISPN004006: Server sent new topology view (id=1, age=0) containing 1 addresses: [10.128.1.17:11222]
+2019-09-09 22:34:30,964 INFO  [io.quarkus] (main) Quarkus 0.21.2 started in 5.227s. Listening on: http://[::]:8080
+2019-09-09 22:34:30,964 INFO  [io.quarkus] (main) Installed features: [cdi, infinispan-client, kogito, resteasy, resteasy-jsonb, smallrye-health, smallrye-openapi, swagger-ui]
+----
+
+. Test the Kogito Travel Agency native application using the application UI or the Swagger UI.
+
 == Lab 4: Event Driven Kogito with Kafka
 
 Events are first class citizens in Kogito. The runtime emits events based on the execution context of given request. The main aim for these events is to notify 3rd parties about changes to the process instance and its data. To avoid too many events being sent and to optimise both producer and consumer side there will be only one event per process instance emitted.
