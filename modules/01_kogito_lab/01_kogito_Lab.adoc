@@ -866,6 +866,12 @@ kafkatopic.kafka.strimzi.io/kogito-processinstances-events created
 $ oc new-project kogito2
 ----
 
+. Give the default service account `view` privileges in the namespace:
++
+----
+$ oc adm policy add-role-to-user view -z default -n kogito2
+----
+
 . The Kogito application is configured for persistence, so we need to deploy an Infinispan server:
 +
 ----
