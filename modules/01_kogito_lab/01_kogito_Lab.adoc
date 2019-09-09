@@ -474,7 +474,7 @@ quarkus.infinispan-client.server-list=infinispan-server.kogito.svc:11222
 $ oc create configmap kogito-travel-agency --from-file=/tmp/application.properties -n kogito
 ----
 
-. The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for a binary deployment of the Kogito Travel Agency app. It describes a BuildConfig, ImageStream, DeploymentConfig, Service and Route for the application. In this lab, we will deploy the application itself usng a binary build from the lab workstation. +
+. The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for a binary deployment of the Kogito Travel Agency app. It describes a BuildConfig, ImageStream, DeploymentConfig, Service and Route for the application. In this lab, we will deploy the application itself using a binary build from the lab workstation. +
 Review the `kogito-travel-agency.yml` template file.
 +
 * We use the `redhat-openjdk18-openshift` image as a builder image. In JVM mode the application requires a JVM to run.
