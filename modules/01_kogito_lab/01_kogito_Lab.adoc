@@ -1038,6 +1038,10 @@ mp.messaging.outgoing.kogito-processinstances-events.bootstrap.servers=kafka-clu
 $ oc create configmap kogito-travel-agency --from-file=/tmp/application.properties -n kogito2
 ----
 
+==== Native binary and image build
+
+If you prefer to build the application using S2I on the OpenShift cluster, skip this section and proceed to the next section.
+
 . Build a Linux 64-bit native executable of the Kogito Travel Agency application:
 +
 ----
@@ -1073,6 +1077,56 @@ service/kogito-travel-agency-native created
 route.route.openshift.io/kogito-travel-agency-native created
 deploymentconfig.apps.openshift.io/kogito-travel-agency-native created
 ----
+
+==== S2I Build
+
+If you have built and deployed the native binary and image on the workstation as described in the previous section, you can skip this section of the lab.
+
+. This S2I build requires more than 6Gi of memory. The `kogito2` project has a LimitRange defined which limits the maximum memory for a container to 6Gi. To allow for more memory, the LimitRange needs to be patched:
+.. Log in into the cluster as user `admin`. Use the same password as `user1`.
++
+----
+$ oc login -u admin
+----
+.. Patch the LimitRange:
++
+----
+$ oc patch limitrange kogito2-core-resource-limits --type='json' -p='[{"op": "replace", "path": "/spec/limits/0/max/memory", "value": "8Gi" }]' -n kogito2
+----
++
+.Output
+----
+limitrange/kogito2-core-resource-limits patched
+----
+.. Log back in as `user1`.
++
+----
+$ oc login -u user1
+---- 
+. Review the `openshift/kogito-travel-agency-s2i.yml` template for the S2i build.
+* This template define ImageStreams, BuildConfigs, DeplopymentConfigs, Services and Routes for a S2I build - including a chained build - and deployment of the Kogito Travel Agency application.
+. Deploy the template for the S2I build:
++
+----
+$ oc process -f openshift/kogito-travel-agency-s2i.yml | oc create -f - -n kogito2
+----
++
+.Output
+----
+buildconfig.build.openshift.io/kogito-travel-agency-s2i created
+imagestream.image.openshift.io/kogito-quarkus-ubi8-s2i created
+imagestream.image.openshift.io/kogito-travel-agency-s2i created
+buildconfig.build.openshift.io/kogito-travel-agency-s2i-runtime created
+imagestream.image.openshift.io/kogito-quarkus-ubi8 created
+imagestream.image.openshift.io/kogito-travel-agency-s2i-runtime created
+service/kogito-travel-agency-s2i created
+route.route.openshift.io/kogito-travel-agency-s2i created
+deploymentconfig.apps.openshift.io/kogito-travel-agency-s2i created
+----
+
+. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. 
+. Once the S2I native build is finished, the chained build starts automatically. 
+. Once the chained build is finished, the application is deployed.
 
 === Kogito Visas application
 
@@ -1123,7 +1177,11 @@ mp.messaging.outgoing.kogito-processinstances-events.bootstrap.servers=kafka-clu
 $ oc create configmap kogito-visas --from-file=/tmp/application.properties -n kogito2
 ----
 
-. Build a Linux 64-bit native executable of the Kogito Travel Agency application:
+==== Native binary and image build
+
+If you prefer to build the application using S2I on the OpenShift cluster, skip this section and proceed to the next section.
+
+. Build a Linux 64-bit native executable of the Kogito Visas application:
 +
 ----
 $ mvn clean package -DskipTests=true -Pnative
@@ -1158,6 +1216,36 @@ service/kogito-visas-native created
 route.route.openshift.io/kogito-visas-native created
 deploymentconfig.apps.openshift.io/kogito-visas-native created
 ----
+
+==== S2I Build
+
+If you have built and deployed the native binary and image on the workstation as described in the previous section, you can skip this section of the lab.
+
+. Review the `openshift/kogito-visas-s2i.yml` template for the S2i build.
+* This template define ImageStreams, BuildConfigs, DeplopymentConfigs, Services and Routes for a S2I build - including a chained build - and deployment of the Kogito Visas application.
+. Deploy the template for the S2I build:
++
+----
+$ oc process -f openshift/kogito-visas-s2i.yml | oc create -f - -n kogito2
+----
++
+.Output
+----
+buildconfig.build.openshift.io/kogito-visas-s2i created
+imagestream.image.openshift.io/kogito-visas-s2i created
+buildconfig.build.openshift.io/kogito-visas-s2i-runtime created
+imagestream.image.openshift.io/kogito-visas-s2i-runtime created
+service/kogito-visas-s2i created
+route.route.openshift.io/kogito-visas-s2i created
+deploymentconfig.apps.openshift.io/kogito-visas-s2i created
+Error from server (AlreadyExists): imagestreams.image.openshift.io "kogito-quarkus-ubi8-s2i" already exists
+Error from server (AlreadyExists): imagestreams.image.openshift.io "kogito-quarkus-ubi8" already exists
+----
+* If you built the Kogito Travel Agency Application with S2I, you will see errors that the `kogito-quarkus-ubi8-s2i` and `kogito-quarkus-ubi8` imagestreams already exist. These errors can be ignored.
+
+. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. 
+. Once the S2I native build is finished, the chained build starts automatically. 
+. Once the chained build is finished, the Kogito Visas application is deployed.
 
 === Kafka Consumer application
 
