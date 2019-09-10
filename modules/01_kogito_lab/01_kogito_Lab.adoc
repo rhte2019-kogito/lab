@@ -121,7 +121,7 @@ The GitHub repository can be found here: https://github.com/rhte2019-kogito/kogi
 $ git clone https://github.com/rhte2019-kogito/kogito-travel-agency-tutorial.git
 ----
 +
-. Navigate tot the _Kogito Travel Agency Tutorial_ folder.
+. Navigate to the `kogito-travel-agency-tutorial` folder.
 +
 ----
 $ cd kogito-travel-agency-tutorial
@@ -135,7 +135,7 @@ $ cd kogito-travel-agency-tutorial
 https://kogito.kie.org/[_Kogito_] is the _Cloud-Native Business Automation platform for building Intelligent Applications_.
 It's build on top of https://www.quarkus.io[Quarkus], a _Kubernetes Native Java stack tailored for GraalVM & OpenJDK HotSpot, crafted from the best of breed Java libraries and standards_.
 
-One of the focusses of Quarkus, and thus of Kogito, is _Developer Experience_. Functionalities like _dev mode_ and _hot reload_ allows developers to make changes in their source code and configuration files, and immediately have these changes available in their test environment, without the need to explicitly compile and redeploy the application. This _hot reload_ functionality is only activated when the application is refreshed (for example when hitting the application with a RESTful request).
+One of the focuses of Quarkus, and thus of Kogito, is _Developer Experience_. Functionalities like _dev mode_ and _hot reload_ allows developers to make changes in their source code and configuration files, and immediately have these changes available in their test environment, without the need to explicitly compile and redeploy the application. This _hot reload_ functionality is only activated when the application is refreshed (for example when hitting the application with a RESTful request).
 
 When you run `mvn compile quarkus:dev` {project-name}, the Kogito/Quarkus application will launch in development mode. When
 it receives a HTTP request it will hold the request, and check to see if any application source
@@ -315,7 +315,7 @@ A good way to demonstrate this is to inspect the Swagger documentation of our _K
 . Inspect the Swagger documentation. Note that the API defines RESTful resources like `Travel` and `VisaApplication` instead of `Process` and `Tasks`.
 image:images/kogito-swagger.png[]
 
-Travel request can be started via Swagger UI - using its "Try out" option. Locate `/travels` endpoint with `POST` method with following payload
+Travel request can be started via Swagger UI - using its "Try out" option. Locate the `/travels` endpoint with `POST` method with following payload
 
 ----
 {
@@ -340,7 +340,7 @@ Travel request can be started via Swagger UI - using its "Try out" option. Locat
 }
 ----
 
-This will initiate new travel request which should be directly visible in the UI of the Kogito Travel Agency.
+This will initiate a new travel request which should be directly visible in the UI of the Kogito Travel Agency.
 
 == Lab 3: Kogito Persistence
 
@@ -424,7 +424,7 @@ re cache from clustered container
 . From the lab workstation, login into the OpenShift cluster using the `oc` utility as `user1`:
 +
 ----
-$ oc login -u user1 https://master00.example.com -u user1
+$ oc login -u user1 https://master00.example.com
 ----
 . Create a project for the Kogito Travel Agency application
 +
@@ -440,6 +440,12 @@ $ oc adm policy add-role-to-user view -z default -n kogito
 +
 ----
 $ oc process -f openshift/infinispan-server.yml | oc create -f - -n kogito
+----
++
+.Output
+----
+service/infinispan-server created
+deployment.apps/infinispan-server created
 ----
 . Follow the deployment of the Infinispan server on the OpenShift console, or use `oc`:
 +
@@ -805,8 +811,7 @@ Notice that the application starts up in about 0.6 seconds. The pod takes more o
 
 . Test the Kogito Travel Agency native application using the application UI or the Swagger UI.
 
-=== Deployment to OpenShift - Native image with S2i
-
+=== Deployment to OpenShift - Native image with S2I
 In this section of the lab, we are going to leverage the _S2I_ build mechanism of OpenShift to build a native image for the Kogito application. We use Kogito's _GraalVM Native S2I Builder_, and therefore do not need a Dockerfile when using this this approach. You do not need to locally clone the Git repository, as it will be directly built inside OpenShift. After the S2I build you are going to use a _chained build_ to produce a runner image that is minimal in size and does not contain all the dependencies required to build the application.
 
 . Review the `openshift/kogito-travel-agency-s2i.yml` template for the S2i build.
@@ -818,12 +823,13 @@ In this section of the lab, we are going to leverage the _S2I_ build mechanism o
 $ oc process -f openshift/kogito-travel-agency-s2i.yml | oc create -f - -n kogito
 ----
 +
+.Output
 ----
 buildconfig.build.openshift.io/kogito-travel-agency-s2i created
 imagestream.image.openshift.io/kogito-quarkus-ubi8-s2i created
 imagestream.image.openshift.io/kogito-travel-agency-s2i created
 ----
-. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. At the end of the build you shouldsee the following in the logs:
+. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. At the end of the build you should see the following in the logs:
 +
 ----
 [kogito-travel-agency-1.0-SNAPSHOT-runner:213]   (typeflow):  76,100.88 ms                               
@@ -866,7 +872,7 @@ Pushed 4/4 layers, 100% complete
 Push successful
 ----
 . Review the template for the chained build:
-* The template defines an ImageStream for the Kogito S2I runktime image.
+* The template defines an ImageStream for the _Kogito S2I runtime_ image.
 * The template also defines a BuildConfig which takes the binary built in the previous step as input. The binary is copied to the `/home/kogito/bin` directory of the runtime image.
 * The template also defines a DeploymentConfig, Service and Route for the application.
 * The `kogito-travel-agency` ConfigMap is mounted to the `/home/kogito/config` directory of the runtime pod.
@@ -876,6 +882,7 @@ Push successful
 $ oc process -f openshift/kogito-travel-agency-runtime.yml | oc create -f - -n kogito
 ----
 +
+.Output
 ----
 buildconfig.build.openshift.io/kogito-travel-agency-runtime created
 imagestream.image.openshift.io/kogito-quarkus-ubi8 created
@@ -944,6 +951,8 @@ image::images/visa-applications-process.png[]
 
 This version of the Kogito Travel Agency app is dependent on a running Kafka cluster. We could spin up a local containerized Kafka cluster, but for the sake of simplicity, we'll deploy the app directly to OpenShift, using a native image.
 
+For this lab, you can choose between building the native binary and image on the workstation node, or using a S2I build.
+
 === Kogito Travel Agency application
 
 . From the `/home/lab-user/kogito-travel-agency-tutorial` folder, navigate to the `03-kogito-travel-agency` folder.
@@ -982,6 +991,12 @@ $ oc adm policy add-role-to-user view -z default -n kogito2
 +
 ----
 $ oc process -f openshift/infinispan-server.yml | oc create -f - -n kogito2
+----
++
+.Output
+----
+service/infinispan-server created
+deployment.apps/infinispan-server created
 ----
 
 . Review the `pom.xml` file of the application. Notice the dependencies to `org.kie.kogito:kogito-events-reactive-messaging-addon`, `io.quarkus:quarkus-kafka-client` and `io.quarkus:quarkus-smallrye-reactive-messaging-kafka` which are required for Kafka integration.
