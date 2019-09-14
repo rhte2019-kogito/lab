@@ -137,12 +137,8 @@ It's build on top of https://www.quarkus.io[Quarkus], a _Kubernetes Native Java 
 
 One of the focuses of Quarkus, and thus of Kogito, is _Developer Experience_. Functionalities like _dev mode_ and _hot reload_ allows developers to make changes in their source code and configuration files, and immediately have these changes available in their test environment, without the need to explicitly compile and redeploy the application. This _hot reload_ functionality is only activated when the application is refreshed (for example when hitting the application with a RESTful request).
 
-When you run `mvn compile quarkus:dev` {project-name}, the Kogito/Quarkus application will launch in development mode. When
-it receives a HTTP request it will hold the request, and check to see if any application source
-files (Java code, process definitions, rule definitions, etc.) have been changed. If they have it will transparently compile the changed files, redeploy
-the application with the changed files, and then the HTTP request will continue to the redeployed
-application. Project redeploys are much faster than a traditional app server, so for all but the largest
-applications this should take well under a second. This greatly speeds up a developer's development cycle.
+When you run `mvn compile quarkus:dev`, the Kogito/Quarkus application will launch in development mode. When it receives a HTTP request it will hold the request, and check to see if any application source files (Java code, process definitions, rule definitions, etc.) have been changed. If they have it will transparently compile the changed files, redeploy
+the application with the changed files, and then the HTTP request will continue to the redeployed application. Project redeploys are much faster than a traditional app server, so for all but the largest applications this should take well under a second. This greatly speeds up a developer's development cycle.
 
 Kogito provides support for not only hot-reloading source code, but also business assets, like BPMN2 process definitions, DMN decision definitions, DRL rule files, Excel-based decision tables. This makes Kogito and its supported resources a first-class-citizen in the Quarkus eco-system.
 
@@ -305,7 +301,7 @@ We've seen the _hot-reload_ semantics of Kogito in action. Next we will look at 
 
 In previous versions of our Business Application platforms, the RESTful services always exposed generic RESTful APIs. An example of this was the commands-based API to invoke Drools Rules via KIE-Server, and the Map-based input parameters when starting a jBPM businesss process.
 
-In Kogito, the exposed (RESTful) services are generated based on your domain data. In other words, Kogito adopts to your business domain rather than the other way around. This prevents the leaking of abstractions of the platform into your client applications and services and allows you to stay focused on the business and business domain instead of being concerned with the technology behind it.
+In Kogito, the exposed (RESTful) services are generated based on your domain data. In other words, Kogito adapts to your business domain rather than the other way around. This prevents the leaking of abstractions of the platform into your client applications and services and allows you to stay focused on the business and business domain instead of being concerned with the technology behind it.
 
 Kogito accomplishes this by introspecting the business assets (process definitions, DRL, DMN, etc), and generating its remoting APIs based on the data-types and functionalities of your assets. This allows Kogito to expose domain specific APIs to its consumers.
 
@@ -315,28 +311,28 @@ A good way to demonstrate this is to inspect the Swagger documentation of our _K
 . Inspect the Swagger documentation. Note that the API defines RESTful resources like `Travel` and `VisaApplication` instead of `Process` and `Tasks`.
 image:images/kogito-swagger.png[]
 
-Travel request can be started via Swagger UI - using its "Try out" option. Locate the `/travels` endpoint with `POST` method with following payload
+A Travel request can be started via Swagger UI - using its _Try out_ option. Locate the `/travels` endpoint with `POST` method with following payload
 
 ----
 {
-	"traveller" : {
-		"firstName" : "Jan",
-		"lastName" : "Kowalski",
-		"email" : "jan.kowalski@example.com",
-		"nationality" : "Polish",
-		"address" : {
-			"street" : "polna",
-			"city" : "Krakow",
-			"zipCode" : "32000",
-			"country" : "Poland"
-		}
-	},
-	"trip" : {
-		"city" : "New York",
-		"country" : "US",
-		"begin" : "2019-12-10T00:00:00.000+02:00",
-		"end" : "2019-12-15T00:00:00.000+02:00"
-	}
+  "traveller": {
+    "firstName": "Jan",
+    "lastName": "Kowalski",
+    "email": "jan.kowalski@example.com",
+    "nationality": "Polish",
+    "address": {
+      "street": "polna",
+      "city": "Krakow",
+      "zipCode": "32000",
+      "country": "Poland"
+    }
+  },
+  "trip": {
+    "city": "New York",
+    "country": "US",
+    "begin": "2019-12-10T00:00:00.000+02:00",
+    "end": "2019-12-15T00:00:00.000+02:00"
+  }
 }
 ----
 
@@ -344,17 +340,17 @@ This will initiate a new travel request which should be directly visible in the 
 
 == Lab 3: Kogito Persistence
 
-Kogito supports a runtime persistence for workflows. That allows users to configure key value based storage backed by Infinispan to persist data (including active nodes and process instance variables) to preserve it across restarts.
+Kogito supports runtime persistence for workflows. That allows users to configure key value based storage backed by Infinispan to persist data (including active nodes and process instance variables) to preserve the state across restarts.
 
-Runtime persistence focuses mainly on storing data that are required to resume workflow execution for particular process instance. Regardless if the process is public or provide as long as it’s not completed it subject for persistence.
+Runtime persistence focuses mainly on storing data that are required to resume workflow execution for a particular process instance. Regardless if the process is public or private, as long as it’s not completed it subject for persistence.
 
 *Node instances*
 
-Node instances that are currently active, so called wait states, are persisted when process instance finished execution but have not reached end state (completed or aborted). This means that only information required to resume are persisted. There might be one or more active nodes instances stored at any given point in time.
+Node instances that are currently active, so called wait states, are persisted when the process instance finishes execution but has not reached an end state (completed or aborted). This means that only information required to resume is persisted. There might be one or more active nodes instances stored at any given point in time.
 
 *Process instance variables*
 
-All data that are included in the process instance are stored together with the process instance itself. These must be marshalled into a bytes format so it can be easily transferred over the wire and persisted into the key value storage. The marshalling and unmarshalling is implemented based on ProtoBuf and requires to have schema and marshallers available to know how to deal with given type of data.
+All data that are included in the process instance are stored together with the process instance itself. These must be marshalled into a bytes format so it can be easily transferred over the wire and persisted into the key value storage. The marshalling and unmarshalling is implemented based on ProtoBuf and requires to have schema and marshallers available to know how to deal with a given type of data.
 
 In this section of the lab we will use the `02-kogito-travel-agency` project, which is the same project as used in the previous lab, but this time with persistence enabled. We use _Infinispan_ as persistent data store for process data. +
 In the lab we will deploy the application to OpenShift. We will also build and deploy a native image to OpenShift.
@@ -374,6 +370,7 @@ quarkus.infinispan-client.server-list=localhost:11222
 ----
 +
 The `quarkus.infinispan-client.server-list` entry defines the list of Infinispan servers for the Quarkus Infinispan client to connect to upon startup. The Quarkus Infinispan client uses the _Infinispan Hot Rod_ protocol to connect to a remote Infinispan server.
+
 . Start a local instance of Infinispan on the lab workstation using Podman. +
 Open a new terminal, ssh into the workstation as user `lab-user`, and run the following commands:
 +
@@ -405,15 +402,13 @@ $ mvn clean compile quarkus:dev
 ----
 +
 Note that the application successfully discovered the Infinispan server.
+
 . Check the logs of the Infinispan server. Note the following output:
 +
 ----
-05:35:11,172 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t1) DGISPN0001: Started travels_store ca
-che from clustered container
-05:35:11,203 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t2) DGISPN0001: Started flightBooking_st
-ore cache from clustered container
-05:35:11,219 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t3) DGISPN0001: Started hotelBooking_sto
-re cache from clustered container
+05:35:11,172 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t1) DGISPN0001: Started travels_store cache from clustered container
+05:35:11,203 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t2) DGISPN0001: Started flightBooking_store cache from clustered container
+05:35:11,219 INFO  [org.jboss.as.clustering.infinispan] (async-thread--p6-t3) DGISPN0001: Started hotelBooking_store cache from clustered container
 ----
 . Create a couple of travel requests using the application UI or the Swagger UI.
 . Press `Ctrl-C` to shut down the application. Keep the Infinispan server running. Start the application again in _dev mode_. Notice that the travel requests are still present.
@@ -436,7 +431,7 @@ $ oc new-project kogito
 ----
 $ oc adm policy add-role-to-user view -z default -n kogito
 ----
-. The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for an Infinispan deployment. It will create a minimal Infinispan deployment, consisting of 1 node, with disabled security,and  exposing a Hot Rod endpoint on port 11222. To deploy Infinispan on your OpenShift cluster:
+. The `openshift` folder of the `02-kogito-travel-agency` project contains an OpenShift template file for an Infinispan deployment. It will create a minimal Infinispan deployment, consisting of 1 node, with disabled security, and exposing a Hot Rod endpoint on port 11222. To deploy Infinispan on your OpenShift cluster:
 +
 ----
 $ oc process -f openshift/infinispan-server.yml | oc create -f - -n kogito
@@ -461,7 +456,7 @@ infinispan-server-656b846c7c-rgz8z   0/1       Running   0         35s
 infinispan-server-656b846c7c-rgz8z   1/1       Running   0         1m
 ----
 
-. By default, the Kogito Travel Agency app will try to connect to a Infinispan server on `localhost:11222`. When deploying on OpenShift, we need to configure the application to connect a remote Infinispan instance. To override the default configuration properties we can use a ConfigMap containing an `application.properties` file which will be mounted inside the application pod.
+. By default, the Kogito Travel Agency app will try to connect to a Infinispan server on `localhost:11222`. When deploying on OpenShift, we need to configure the application to connect to a remote Infinispan instance. To override the default configuration properties we can use a _ConfigMap_ containing an `application.properties` file which will be mounted inside the application pod.
 .. On the lab workstation, create a file `/tmp/application.properties`.
 +
 ----
@@ -479,8 +474,13 @@ quarkus.infinispan-client.server-list=infinispan-server.kogito.svc:11222
 ----
 $ oc create configmap kogito-travel-agency --from-file=/tmp/application.properties -n kogito
 ----
++
+.Output
+----
+configmap/kogito-travel-agency created
+----
 
-. The `openshift` folder of the `02-kogito-travel-agency` project contains a OpenShift template file for a binary deployment of the Kogito Travel Agency app. It describes a BuildConfig, ImageStream, DeploymentConfig, Service and Route for the application. In this lab, we will deploy the application itself using a binary build from the lab workstation. +
+. The `openshift` folder of the `02-kogito-travel-agency` project contains an OpenShift template file for a binary deployment of the Kogito Travel Agency app. It describes a BuildConfig, ImageStream, DeploymentConfig, Service and Route for the application. In this lab, we will deploy the application itself using a binary build from the lab workstation. +
 Review the `kogito-travel-agency.yml` template file.
 +
 * We use the `redhat-openjdk18-openshift` image as a builder image. In JVM mode the application requires a JVM to run.
@@ -530,7 +530,7 @@ drwxrwxr-x. 2 lab-user lab-user   4096 Aug 25 08:41 transformed-classes
 drwxrwxr-x. 6 lab-user lab-user   4096 Aug 25 08:41 wiring-classes
 ----
 +
-`kogito-travel-agency-1.0-SNAPSHOT-runner.jar` is a executable JAR file. It is however not an _uber-jar_ as the dependencies are copied into the target/lib directory.
+`kogito-travel-agency-1.0-SNAPSHOT-runner.jar` is an executable JAR file. It is however not an _uber-jar_ as the dependencies are copied into the target/lib directory.
 
 . Prepare for a binary build on OpenShift.
 On your workstation, create a directory `/tmp/kogito-travel-agency`. Copy the executable application jar and the lib folder to the directory.
@@ -546,6 +546,7 @@ $ cp -r target/kogito-travel-agency-1.0-SNAPSHOT-runner.jar target/lib /tmp/kogi
 $ oc start-build kogito-travel-agency --from-dir=/tmp/kogito-travel-agency -n kogito
 ----
 +
+.Output
 ----
 Uploading directory "/tmp/kogito-travel-agency" as binary input for the build ...
 ...........
@@ -558,6 +559,7 @@ build.build.openshift.io/kogito-travel-agency-1 started
 $ oc logs kogito-travel-agency-1-build -n kogito
 ----
 +
+.Output
 ----
 Using docker-registry.default.svc:5000/openshift/redhat-openjdk18-openshift@sha256:dc84fed0f6f40975a2277c126438c8aa15c70eeac75981dbaa4b6b853eff61a6 as the s2i builder image
 ==================================================================
@@ -594,15 +596,9 @@ Jolokia: Agent started with URL https://10.128.0.180:8778/jolokia/
 Notice that the application starts up in about 15 seconds. The pod takes more or less 300MB of memory.
 
 
-. Test the Kogito Travel Agency application using the application UI or the Swagger UI.
-+
-----
-http://kogito-travel-agency-kogito.apps-<GUID>.generic.opentlc.com
-----
-+
-----
+. Test the Kogito Travel Agency application using the application UI or the Swagger UI. +
+http://kogito-travel-agency-kogito.apps-<GUID>.generic.opentlc.com +
 http://kogito-travel-agency-kogito.apps-<GUID>.generic.opentlc.com/swagger-ui/
-----
 
 === Deployment to OpenShift - Native image
 
@@ -710,7 +706,7 @@ $ ./target/kogito-travel-agency-1.0-SNAPSHOT-runner
 $ sudo podman build -f src/main/docker/Dockerfile.native -t kogito-travel-agency:0.0.1 .
 ----
 +
-.Sample output
+.Output
 ----
 STEP 1: FROM registry.access.redhat.com/ubi8/ubi-minimal
 Getting image source signatures
@@ -742,6 +738,11 @@ $ oc login -u admin
 +
 ----
 $ oc create route passthrough docker-registry-lab --service=docker-registry -n default
+----
++
+.Output
+----
+route.route.openshift.io/docker-registry-lab created
 ----
 .. Set the route to the docker registry as an environment variable.
 +
@@ -814,6 +815,8 @@ Notice that the application starts up in about 0.6 seconds. The pod takes more o
 === Deployment to OpenShift - Native image with S2I
 In this section of the lab, we are going to leverage the _S2I_ build mechanism of OpenShift to build a native image for the Kogito application. We use Kogito's _GraalVM Native S2I Builder_, and therefore do not need a Dockerfile when using this this approach. You do not need to locally clone the Git repository, as it will be directly built inside OpenShift. After the S2I build you are going to use a _chained build_ to produce a runner image that is minimal in size and does not contain all the dependencies required to build the application.
 
+NOTE: On the hosted cluster for this lab a S2I build takes considerably longer than a native build on the workstation. The S2I build can take up to 20 minutes to complete. 
+
 . Review the `openshift/kogito-travel-agency-s2i.yml` template for the S2i build.
 * This template creates an Imagestream for the Kogito Native S2I builder image, and a BuildConfig and Imagestream for an S2i build from the source code of the application as hosted on Github.
 * A native build consumes consumes considerable memory and CPU, so the BuildConfig is configured with appropriate resource requests and limits (2 CPU cores, 6GB of RAM).
@@ -832,10 +835,10 @@ imagestream.image.openshift.io/kogito-travel-agency-s2i created
 . Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. At the end of the build you should see the following in the logs:
 +
 ----
-[kogito-travel-agency-1.0-SNAPSHOT-runner:213]   (typeflow):  76,100.88 ms                               
-[kogito-travel-agency-1.0-SNAPSHOT-runner:213]    (objects):  52,111.26 ms                               
-[kogito-travel-agency-1.0-SNAPSHOT-runner:213]   (features):   1,568.30 ms                               
-[kogito-travel-agency-1.0-SNAPSHOT-runner:213]     analysis: 131,757.36 ms                               
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]   (typeflow):  76,100.88 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]    (objects):  52,111.26 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]   (features):   1,568.30 ms
+[kogito-travel-agency-1.0-SNAPSHOT-runner:213]     analysis: 131,757.36 ms
 Printing call tree to /tmp/src/target/reports/call_tree_kogito-travel-agency-1.0-SNAPSHOT-runner_20190909
 _192311.txt
 Printing list of used classes to /tmp/src/target/reports/used_classes_kogito-travel-agency-1.0-SNAPSHOT-r
@@ -1102,7 +1105,7 @@ limitrange/kogito2-core-resource-limits patched
 +
 ----
 $ oc login -u user1
----- 
+----
 . Review the `openshift/kogito-travel-agency-s2i.yml` template for the S2i build.
 * This template define ImageStreams, BuildConfigs, DeplopymentConfigs, Services and Routes for a S2I build - including a chained build - and deployment of the Kogito Travel Agency application.
 . Deploy the template for the S2I build:
@@ -1124,8 +1127,8 @@ route.route.openshift.io/kogito-travel-agency-s2i created
 deploymentconfig.apps.openshift.io/kogito-travel-agency-s2i created
 ----
 
-. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. 
-. Once the S2I native build is finished, the chained build starts automatically. 
+. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete.
+. Once the S2I native build is finished, the chained build starts automatically.
 . Once the chained build is finished, the application is deployed.
 
 === Kogito Visas application
@@ -1243,8 +1246,8 @@ Error from server (AlreadyExists): imagestreams.image.openshift.io "kogito-quark
 ----
 * If you built the Kogito Travel Agency Application with S2I, you will see errors that the `kogito-quarkus-ubi8-s2i` and `kogito-quarkus-ubi8` imagestreams already exist. These errors can be ignored.
 
-. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete. 
-. Once the S2I native build is finished, the chained build starts automatically. 
+. Using `oc` client, follow the logs of the builder pod. The build will take up to 10 minutes to complete.
+. Once the S2I native build is finished, the chained build starts automatically.
 . Once the chained build is finished, the Kogito Visas application is deployed.
 
 === Kafka Consumer application
@@ -1283,6 +1286,12 @@ $ oc create configmap kafka-consumer --from-file=/tmp/application.properties -n 
 ----
 $ oc process -f openshift/kafka-consumer-native.yml | oc create -f - -n kogito2
 ----
++
+.Output
+----
+service/kafka-consumer created
+deployment.apps/kafka-consumer created
+----
 
 === Test the application
 
@@ -1291,24 +1300,24 @@ As an example, use the following payload:
 +
 ----
 {
-"traveller" : {
-"firstName" : "John",
-"lastName" : "Doe",
-"email" : "john.doe@example.com",
-"nationality" : "Polish",
-"address" : {
-"street" : "Main Street",
-"city" : "London",
-"zipCode" : "12345",
-"country" : "UK"
-}
-},
-"trip" : {
-"city" : "New York",
-"country" : "US",
-"begin" : "2019-12-10T00:00:00.000+02:00",
-"end" : "2019-12-31T00:00:00.000+02:00"
-}
+  "traveller": {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "nationality": "Polish",
+    "address": {
+      "street": "Main Street",
+      "city": "London",
+      "zipCode": "12345",
+      "country": "UK"
+    }
+  },
+  "trip": {
+    "city": "New York",
+    "country": "US",
+    "begin": "2019-12-10T00:00:00.000+02:00",
+    "end": "2019-12-31T00:00:00.000+02:00"
+  }
 }
 ----
 +
@@ -1317,7 +1326,9 @@ According to the rules defined in both applications, a visa application is requi
 . Verify using the Kogito Travel Agency UI that a travel booking has been created.
 +
 image:images/travel-agency-ui.png[]
+
 . Complete the Visa application task. Fill in a bogus passport number, and a duration of 30 (days) and submit the application.
+
 . Verify in the Visa application that a Visa application has been created which requires manual approval:
 +
 image::images/visa-approval-ui.png[]
@@ -1396,6 +1407,11 @@ kogito.protobuf.folder=/deployments/proto
 ----
 $ oc create configmap data-index-service --from-file=/tmp/application.properties -n kogito2
 ----
++
+.Output
+----
+configmap/data-index-service created
+----
 
 . Create a ConfigMap for the Protobuf files for the Data Index Service.
 .. The Protobuf definition files for the domain models for the Kogito Travel Agency and Visas applications are generated when the project is build. They are stored in the `target/classes/persistence` directory of the project.
@@ -1413,6 +1429,11 @@ kogito-application.proto  travels.proto
 +
 ----
 $ oc create configmap data-index-service-proto --from-file=../03-kogito-travel-agency/target/classes/persistence/travels.proto --from-file=../03-kogito-visas/target/classes/persistence/visaApplications.proto -n kogito2
+----
++
+.Output
+----
+configmap/data-index-service-proto created
 ----
 
 . Deploy the Data Index Service on OpenShift. We use a pre-built image of the application.
@@ -1494,7 +1515,7 @@ image::images/data-index-service-ui-query-2.png[]
 image::images/data-index-service-ui-query-3.png[]
 
 
-=== Monitoring
+== Lab 6: Monitoring
 
 Kogito comes with built-in functionality to expose metrics about process and rules execution in Prometheus format. To enable this functionality, a dependency to the `org.kie.kogito:monitoring-prometheus-addon` library must be added to the project, and the Kogito Prometheus event listeners must be registered with the engine. Prometheus metrics are exposed on the `/metrics` path.
 
@@ -1523,9 +1544,12 @@ $ oc label namespace kogito2 monitoring-key=kogito
 . Label the Kogito application services:
 +
 ----
-$ oc label service kogito-visas monitoring=prometheus -n kogito2
-$ oc label service kogito-travel-agency monitoring=prometheus -n kogito2
+$ oc label service kogito-visas-native monitoring=prometheus -n kogito2
+$ oc label service kogito-travel-agency-native monitoring=prometheus -n kogito2
 ----
++
+If you used S2I to build and deploy the Kogito Travel Agency and Kogito Visas, the service names are `kogito-travel-agency-native-s2i` and `kogito-visas-s2i`.
+
 . Create a ServiceMonitor Custom Resource for the labeled services. The CR will be picked up by the Prometheus operator, and corresponding Prometheus scraping targets will be created.
 +
 ----
@@ -1536,6 +1560,7 @@ $ oc create -f openshift/service-monitor.yml -n kogito2
 ----
 servicemonitor.monitoring.coreos.com/kogito-monitor-services created
 ----
+
 . Verify that the Prometheus scraping targets have been created and are active.
 .. Open a browser window, and navigate to the Prometheus landing page on your cluster - https://prometheus-route-monitoring.apps-$GUID.generic.opentlc.com. Create a security exception.
 +
@@ -1546,7 +1571,9 @@ image::images/prometheus-targets.png[]
 .. Navigate back to the landing page and click on the `insert metric at cursor` drop-down to see a list of available metrics:
 +
 image::images/prometheus-metrics.png[]
-* Note that the list mightnot show metric types for which data has not been generated yet.
++
+Note that the list will not show metric types for which data has not been generated yet.
+
 . Deploy a dashboard to Grafana. The `openshift/kogitotravel-grafana-dashboard.yml` contains a pre-built GrafanaDashboard CR which displays the metrics gathered by Prometheus.
 +
 ----
